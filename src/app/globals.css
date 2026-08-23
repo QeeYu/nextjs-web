@@ -1,0 +1,122 @@
+/* ============================================================
+   全局样式：引入 Tailwind v4，并定义主题变量与通用动画
+   ============================================================ */
+@import "tailwindcss";
+
+/* Tailwind v4 主题定制：这些变量会自动生成原子类
+   如 --color-neon → text-neon / bg-neon / border-neon ... */
+@theme {
+  --color-ink: #05060e;      /* 最深层背景 */
+  --color-ink-2: #0b0d1d;    /* 次级背景 */
+  --color-mist: #e8ecff;     /* 主文字（冷白） */
+  --color-dim: #9aa3c7;      /* 次级文字 */
+  --color-neon: #7c5cff;     /* 霓虹紫（主色） */
+  --color-cyan: #38e1ff;     /* 霓虹青 */
+  --color-pink: #ff5c8a;     /* 霓虹粉 */
+  --color-lime: #b4ff39;     /* 霓虹绿 */
+  --font-display: "Avenir", "PingFang SC", "HarmonyOS Sans SC",
+                  "Microsoft YaHei", system-ui, sans-serif;
+}
+
+/* ---------- 基础 ---------- */
+html { scroll-behavior: smooth; }            /* 锚点滚动平滑 */
+body {
+  background: var(--color-ink);
+  color: var(--color-mist);
+  overflow-x: hidden;                        /* 防止动画造成横向滚动条 */
+}
+::selection { background: #7c5cff88; }       /* 文字选中色 */
+
+/* 自定义滚动条 */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: #0b0d1d; }
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(#7c5cff, #38e1ff);
+  border-radius: 8px;
+}
+
+/* ---------- 通用组件类 ---------- */
+
+/* 毛玻璃卡片（全站卡片的基础外观） */
+.card-glass {
+  position: relative;
+  border-radius: 1.25rem;
+  background: linear-gradient(160deg, rgba(255,255,255,.08), rgba(255,255,255,.02));
+  border: 1px solid rgba(255,255,255,.12);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow: 0 18px 50px -20px rgba(0,0,0,.7);
+  overflow: hidden;
+}
+
+/* 卡片顶部的彩色流光描边 */
+.card-line::before {
+  content: ""; position: absolute; inset: 0 0 auto 0; height: 2px;
+  background: linear-gradient(90deg, transparent, #7c5cff, #38e1ff, #ff5c8a, transparent);
+  opacity: .8;
+}
+
+/* 渐变文字 */
+.text-gradient {
+  background: linear-gradient(92deg, #38e1ff, #7c5cff 45%, #ff5c8a);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+
+/* 倾斜卡片容器：开启 3D 空间 */
+.tilt-transform { transform-style: preserve-3d; will-change: transform; }
+
+/* 首屏字母初始隐藏（由 anime.js 弹入，避免 JS 执行前闪烁） */
+.hero-letter { opacity: 0; }
+
+/* ---------- 关键帧动画 ---------- */
+
+/* 向下箭头 / 元素的灵动弹跳 */
+@keyframes floatY {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(14px); }
+}
+.anim-float { animation: floatY 1.8s ease-in-out infinite; }
+
+/* 旋转一周（环形语言图 / 装饰方块） */
+@keyframes spin360 { to { transform: rotate(360deg); } }
+/* 反向旋转一周（标签保持水平的关键） */
+@keyframes spinRev360 { to { transform: rotate(-360deg); } }
+
+.ring-rot      { animation: spin360 50s linear infinite; }   /* 环形图：正转 */
+.ring-label-rot{ animation: spinRev360 50s linear infinite; }/* 标签：反转 → 永远水平 */
+.anim-spin-slow{ animation: spin360 16s linear infinite; }   /* 慢速自转装饰 */
+
+/* 悬停整个环形区域时暂停旋转，方便阅读与点击 */
+.ring-zone:hover .ring-rot,
+.ring-zone:hover .ring-label-rot { animation-play-state: paused; }
+
+/* 装饰图形的漂浮漂移 */
+@keyframes blobDrift {
+  0%, 100% { transform: translate(0,0) rotate(0deg); }
+  33%      { transform: translate(10px,-14px) rotate(6deg); }
+  66%      { transform: translate(-8px,8px) rotate(-5deg); }
+}
+.anim-blob { animation: blobDrift 7s ease-in-out infinite; }
+
+/* 时间数字的呼吸辉光 */
+@keyframes glowPulse {
+  0%, 100% { text-shadow: 0 0 12px rgba(56,225,255,.35); }
+  50%      { text-shadow: 0 0 26px rgba(124,92,255,.65); }
+}
+.anim-glow { animation: glowPulse 3s ease-in-out infinite; }
+
+/* ---------- 响应式 / 无障碍 ---------- */
+
+/* 触摸设备隐藏悬停眩光 */
+@media (hover: none) {
+  .only-hover { display: none; }
+}
+/* 手机上降低毛玻璃模糊度，提升性能 */
+@media (max-width: 768px) {
+  .card-glass { backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+}
+/* 尊重系统“减少动态效果”偏好 */
+@media (prefers-reduced-motion: reduce) {
+  .anim-float, .ring-rot, .ring-label-rot,
+  .anim-blob, .anim-glow, .anim-spin-slow { animation: none !important; }
+}
