@@ -16,11 +16,8 @@ jobs:
         with:
           node-version: '22'
 
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Build project
-        run: npm run build
+      # 可选：在 GitHub Actions 云端先构建，但根据你的情况，我们直接在服务器上构建
+      # 但为了更快，可以在这里构建然后只同步产物，但为了简单，我们保持服务器构建
 
       - name: Deploy to VPS via SSH
         uses: appleboy/ssh-action@v1
@@ -29,11 +26,20 @@ jobs:
           username: ${{ secrets.USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
+            # 加载 NVM 环境（确保 node/npm 可用）
+            export NVM_DIR="$HOME/.nvm"
+            [ -s "$NVM_DIR/nvm.sh" ] && source "$NVM_DIR/nvm.sh"
+
+            # 进入项目目录
             cd ${{ secrets.DEPLOY_PATH }}
+
+            # 拉取最新代码
             git reset --hard HEAD
             git pull origin main
-            npm ci --production
-            npm run build
-            # 根据你用的服务管理方式，选择下面其中一行：
+
+            # 使用绝对路径执行 npm（避免环境变量问题）
+            /home/Ubuntu/.nvm/versions/node/v22.23.2/bin/npm install
+            /home/Ubuntu/.nvm/versions/node/v22.23.2/bin/npm run build
+
+            # 重启服务
             sudo systemctl restart nextjs
-            # pm2 restart nextjs-app
