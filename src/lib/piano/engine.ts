@@ -1,9 +1,6 @@
 // ====================================================================
-// 音频引擎 v6：
-// - 9 种乐器，全部从 jsdelivr CDN 加载采样（无本地文件）
-// - 惰性加载：切到某音色时才下载该音色的采样
-// - FFT 分析器（波形柱状图可视化）
-// - 延音踏板：踩下时音符持续振动，松开全部停止（同真钢琴）
+// 音频引擎 v7：
+// - 修复：onload 完成前不替换 sampler / 不播放（buffer 未加载崩溃）
 // ====================================================================
 
 import * as Tone from "tone";
@@ -19,10 +16,9 @@ class PianoEngine {
   private loadPromises = new Map<string, Promise<void>>();
   private _analyser: Tone.Analyser | null = null;
 
-  // 延音踏板状态
   private sustainOn = false;
 
-  /** 确保 AudioContext 启动（必须在用户手势内） */
+  /** 确保 AudioContext 启动 */
   private async ensure(): Promise<boolean> {
     if (typeof window === "undefined") return false;
 
@@ -44,7 +40,7 @@ class PianoEngine {
     return true;
   }
 
-  /** FFT 分析器（可视化用） */
+  /** FFT 分析器 */
   getAnalyser(): Tone.Analyser | null {
     if (!this._analyser && this.volumeNode) {
       this._analyser = new Tone.Analyser("fft", 256);
@@ -59,7 +55,7 @@ class PianoEngine {
     return analyser.getValue() as Float32Array;
   }
 
-  /** 加载指定音色的采样（CDN，惰性） */
+  /** 加载指定音色（★ onload 后才连接+替换+标记） */
   private async loadTimbre(timbreId: string): Promise<void> {
     if (this.loadedTimbres.has(timbreId)) return;
     const existing = this.loadPromises.get(timbreId);
@@ -79,75 +75,61 @@ class PianoEngine {
         release: 1,
         onload: () => {
           this.loadedTimbres.add(timbreId);
+          if (this.volumeNode) {
+            sampler.connect(this.volumeNode);
+          }
+          if (this.sampler) {
+            this.sampler.dispose();
+          }
+          this.sampler = sampler;
           resolve();
         },
       });
-
-      if (this.volumeNode) {
-        sampler.connect(this.volumeNode);
-      }
-
-      if (this.sampler) {
-        this.sampler.dispose();
-      }
-      this.sampler = sampler;
     });
 
     this.loadPromises.set(timbreId, loadPromise);
     return loadPromise;
   }
 
-  /** 切换音色（惰性加载 CDN 采样） */
+  /** 切换音色 */
   async setTimbre(timbreId: string) {
     this.currentTimbre = timbreId;
-
-    if (!this.started || !this.volumeNode) {
-      return;
-    }
-
+    if (!this.started || !this.volumeNode) return;
     await this.loadTimbre(timbreId);
   }
 
-  /** 设置延音踏板（true = 踩下） */
+  /** 延音踏板 */
   setSustain(on: boolean) {
     this.sustainOn = on;
-    // 松开踏板 → 立即释放所有正在延音的音符（同真钢琴）
     if (!on && this.sampler) {
-      try {
-        this.sampler.releaseAll();
-      } catch {
-        // 兼容：部分版本无 releaseAll
-      }
+      try { this.sampler.releaseAll(); } catch {}
     }
   }
 
-  /** 当前延音踏板是否踩下 */
   get isSustained(): boolean {
     return this.sustainOn;
   }
 
-  /** 播放音符（延音模式下不自动释放） */
+  /** 播放（★ 守卫：未加载完静默跳过） */
   async play(freq: number) {
     if (!(await this.ensure())) return;
 
-    // 懒加载当前音色
     if (!this.loadedTimbres.has(this.currentTimbre)) {
       await this.loadTimbre(this.currentTimbre);
     }
 
-    if (this.sampler) {
-      const note = Tone.Frequency(freq, "hz").toNote();
-      if (this.sustainOn) {
-        // 踩下踏板 → 只 attack 不 release（琴弦持续振动）
-        this.sampler.triggerAttack(note);
-      } else {
-        // 未踩踏板 → 正常 attack + release
-        this.sampler.triggerAttackRelease(note, "4n");
-      }
+    if (!this.sampler || !this.loadedTimbres.has(this.currentTimbre)) {
+      return;
+    }
+
+    const note = Tone.Frequency(freq, "hz").toNote();
+    if (this.sustainOn) {
+      this.sampler.triggerAttack(note);
+    } else {
+      this.sampler.triggerAttackRelease(note, "4n");
     }
   }
 
-  /** 当前音色是否已加载 */
   isTimbreLoaded(timbreId: string): boolean {
     return this.loadedTimbres.has(timbreId);
   }
