@@ -48,7 +48,7 @@ function PanelShapes({ index }: { index: number }) {
   }
 }
 
-export default function JourneySection() {
+export default function JourneySection({ onMounted }: { onMounted?: () => void } = {}) {
   const wrapRef = useRef<HTMLElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
   const barRef = useRef<HTMLDivElement>(null);
@@ -84,6 +84,8 @@ export default function JourneySection() {
 
     const onLoad = () => ScrollTrigger.refresh();
     window.addEventListener("load", onLoad);
+    // ★ 挂载完成通知（滚动恢复用）
+    onMounted?.();
     return () => { ctx.revert(); window.removeEventListener("load", onLoad); };
   }, []);
 
