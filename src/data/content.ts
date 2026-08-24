@@ -111,7 +111,7 @@ export interface JourneyPanel {
 }
 export const journeyPanels: JourneyPanel[] = [
   { chapter: "CHAPTER 01", titleBefore: "一切，", titleHighlight: "从这里开始", titleAfter: "",
-    text: "欢迎来到 QeeYu 的小宇宙 \n这段向左流动的画面，是我送你的开场动画 ——\n请系好安全带，我们出发。", accent: "text-cyan" },
+    text: "欢迎来到 QeeYu 的个人主页。", accent: "text-cyan" },
   { chapter: "CHAPTER 02 · 热爱", titleBefore: "为热爱 ", titleHighlight: "发电", titleAfter: " 🔥",
     text: "白天写代码，晚上调动画；\n把每一个像素，都当作作品来雕琢。", accent: "text-pink" },
   { chapter: "CHAPTER 03 · 数字", titleBefore: "一些", titleHighlight: "奇怪的统计", titleAfter: " 📊",
