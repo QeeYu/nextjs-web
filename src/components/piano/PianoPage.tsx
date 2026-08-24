@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import * as Tone from "tone";
+import anime from "@/lib/anime";
 import {
   buildKeys, DEFAULT_KEYMAP, parseScore, TIMBRE_LIST, DEMO_SCORES,
   NOTE_NAMES, STORAGE_KEYS, freqOf, DEFAULT_SPECIAL_KEYS, KEY_COUNT_OPTIONS, keyDisplayName,
@@ -18,7 +19,7 @@ type Mode = "score" | "free";
 export default function PianoPage() {
   // ===== 核心状态 =====
   const [timbre, setTimbre] = useState<string>("piano");
-  const [volume, setVolume] = useState<number>(0.4); // ★ 默认音量 40%
+  const [volume, setVolume] = useState<number>(0.4); // 默认音量 40%
   const [baseOctave, setBaseOctave] = useState<number>(3);
   const [keyCount, setKeyCount] = useState<number>(37);
   const [keymap, setKeymap] = useState<Record<string, number>>({ ...DEFAULT_KEYMAP });
@@ -46,9 +47,10 @@ export default function PianoPage() {
   // ===== 提示 =====
   const [audioReady, setAudioReady] = useState(false);
   const [loadingTimbre, setLoadingTimbre] = useState<string | null>(null);
-  // ★ 加载完成提示（留存 3 秒）
+  // 加载完成提示（留存 3 秒）
   const [timbreReady, setTimbreReady] = useState<string | null>(null);
   const readyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const notifyRef = useRef<HTMLDivElement>(null);
 
   const keys = useMemo(() => buildKeys(baseOctave, keyCount), [baseOctave, keyCount]);
 
@@ -67,7 +69,7 @@ export default function PianoPage() {
     requestAnimationFrame(measureHeader);
     setTimeout(measureHeader, 200);
     setTimeout(measureHeader, 500);
-  }, [audioReady, loadingTimbre, timbreReady]); // 提示条出现/消失时重测
+  }, [audioReady]); // 悬浮通知不占布局，仅 audioReady 变化时重测
 
   // ===== localStorage 恢复 =====
   useEffect(() => {
@@ -132,7 +134,7 @@ export default function PianoPage() {
     engine.setSustain(sustainOn);
   }, [sustainOn]);
 
-  // ===== ★ 首次激活音频后，采样就绪提示（留存 3 秒） =====
+  // ===== 首次激活音频后，采样就绪提示（悬浮通知 3 秒） =====
   useEffect(() => {
     if (!audioReady || !engine.isTimbreLoaded(timbre)) return;
     const name = TIMBRE_LIST.find((t) => t.id === timbre)?.name ?? "";
@@ -143,6 +145,20 @@ export default function PianoPage() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [audioReady, timbre, loadingTimbre]);
+
+  // ===== 悬浮通知弹入动画（timbreReady 出现时） =====
+  useEffect(() => {
+    if (timbreReady && notifyRef.current) {
+      anime.remove(notifyRef.current);
+      anime({
+        targets: notifyRef.current,
+        translateY: [-24, 0],
+        opacity: [0, 1],
+        duration: 450,
+        easing: "easeOutBack",
+      });
+    }
+  }, [timbreReady]);
 
   // ===== 清理就绪提示计时器 =====
   useEffect(() => {
@@ -287,10 +303,10 @@ export default function PianoPage() {
   // ===== 设置变更 =====
   const changeTimbre = async (id: string) => {
     setTimbre(id);
-    setTimbreReady(null); // 清掉上一次的就绪提示
+    setTimbreReady(null);
     if (readyTimer.current) clearTimeout(readyTimer.current);
 
-    // ★ 已加载过的音色 → 直接提示就绪（不显示"加载中"）
+    // 已加载过的音色 → 直接提示就绪
     if (engine.isTimbreLoaded(id)) {
       setLoadingTimbre(null);
       const name = TIMBRE_LIST.find((t) => t.id === id)?.name ?? "";
@@ -300,7 +316,7 @@ export default function PianoPage() {
       return;
     }
 
-    // ★ 未加载 → 显示加载中 → 完成后显示就绪 3 秒
+    // 未加载 → 加载中 → 完成后提示就绪 3 秒
     setLoadingTimbre(id);
     await engine.setTimbre(id);
     setLoadingTimbre(null);
@@ -444,7 +460,7 @@ export default function PianoPage() {
         </button>
       </header>
 
-      {/* 音频激活提示 */}
+      {/* 音频激活提示（激活前的必要引导，激活后永久消失） */}
       {!audioReady && (
         <div onClick={async () => { try { await Tone.start(); setAudioReady(true); } catch {} }}
           className="z-20 flex cursor-pointer items-center justify-center gap-2 bg-cyan/10 py-2 text-sm text-cyan">
@@ -453,19 +469,25 @@ export default function PianoPage() {
         </div>
       )}
 
-      {/* 采样加载中提示 */}
-      {loadingTimbre && (
-        <div className="z-20 flex items-center justify-center gap-2 bg-neon/10 py-2 text-sm text-neon">
-          <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-neon" />
-          正在加载 {TIMBRE_LIST.find((t) => t.id === loadingTimbre)?.name} 采样...
-        </div>
-      )}
-
-      {/* ★ 加载完成提示（留存 3 秒，绿色） */}
-      {timbreReady && !loadingTimbre && (
-        <div className="z-20 flex items-center justify-center gap-2 bg-lime/10 py-2 text-sm text-lime">
-          <span className="h-2.5 w-2.5 rounded-full bg-lime" />
-          {timbreReady} 采样已就绪，可以开始演奏
+      {/* ===== ★ 悬浮通知（加载中 / 已就绪，fixed 定位不影响布局） ===== */}
+      {(loadingTimbre || timbreReady) && (
+        <div
+          ref={notifyRef}
+          className={`pointer-events-none fixed left-1/2 top-16 z-[300] -translate-x-1/2 rounded-full border px-5 py-2 text-sm shadow-2xl backdrop-blur-md ${
+            loadingTimbre ? "border-neon/40 bg-ink-2/90" : "border-lime/40 bg-ink-2/90"
+          }`}
+        >
+          {loadingTimbre ? (
+            <span className="flex items-center gap-2 text-neon">
+              <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-neon" />
+              正在加载 {TIMBRE_LIST.find((t) => t.id === loadingTimbre)?.name} 采样...
+            </span>
+          ) : (
+            <span className="flex items-center gap-2 text-lime">
+              <span className="h-2.5 w-2.5 rounded-full bg-lime" />
+              {timbreReady} 采样已就绪，可以开始演奏
+            </span>
+          )}
         </div>
       )}
 
@@ -492,7 +514,7 @@ export default function PianoPage() {
                 }
           }
         >
-          {/* ★ 琴谱带 20%（自由模式显示空格子，保持布局不悬空） */}
+          {/* 琴谱带 20%（自由模式显示空格子，保持布局） */}
           <div className="h-[20%] flex-shrink-0">
             <ScoreTrack
               notes={mode === "score" ? notes : []}

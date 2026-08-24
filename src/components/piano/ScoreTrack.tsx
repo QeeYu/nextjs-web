@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { createPortal } from "react-dom";
 import type { ScoreNote } from "@/lib/piano/constants";
 
 const BLOCK = 88; // 块宽 72 + gap 16
@@ -15,7 +14,7 @@ export default function ScoreTrack({
   keyOfPos: Record<number, string>;
   posOfNote: Record<string, number>;
   onRestart: () => void;
-  freeMode?: boolean; // ★ 自由模式：显示空格子（保持布局占位）
+  freeMode?: boolean;
 }) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const [wrapW, setWrapW] = useState(0);
@@ -30,12 +29,20 @@ export default function ScoreTrack({
   }, []);
 
   const finished = notes.length > 0 && current >= notes.length;
+
+  // ★ 通关后自动从头开始（1.2 秒展示"通关"瞬间后重置，循环演奏）
+  useEffect(() => {
+    if (!finished || freeMode) return;
+    const t = setTimeout(() => onRestart(), 1200);
+    return () => clearTimeout(t);
+  }, [finished, freeMode, onRestart]);
+
   const offset = wrapW / 2 - (current * BLOCK + 36);
 
   return (
     <>
       <div ref={wrapRef} className="relative h-full w-full overflow-hidden bg-white/[0.02]">
-        {/* 中间指示框（自由模式下淡化为装饰） */}
+        {/* 中间指示框（自由模式淡化为装饰） */}
         <div className={`pointer-events-none absolute left-1/2 top-1/2 z-10 h-[88%] w-[80px] -translate-x-1/2 -translate-y-1/2 rounded-lg border-[3px] transition-all duration-300 ${
           freeMode ? "border-white/10 bg-transparent" : "border-cyan/80 bg-cyan/5"
         }`} />
@@ -76,7 +83,14 @@ export default function ScoreTrack({
           </div>
         </div>
 
-        {/* ★ 自由模式：装饰性空格子（保持布局，琴键不悬空） */}
+        {/* ★ 通关瞬间提示（轻量浮层，1.2 秒后自动重开消失） */}
+        {finished && !freeMode && (
+          <div className="pointer-events-none absolute inset-0 z-30 flex items-center justify-center bg-ink/60 backdrop-blur-[2px]">
+            <p className="text-3xl font-black text-gradient">通关！</p>
+          </div>
+        )}
+
+        {/* 自由模式：装饰性空格子 */}
         {freeMode && (
           <div className="pointer-events-none absolute inset-0 flex items-center justify-center gap-4 overflow-hidden px-8">
             {Array.from({ length: 8 }).map((_, i) => (
@@ -85,7 +99,6 @@ export default function ScoreTrack({
                 <span className="text-xl text-dim/30">♪</span>
               </div>
             ))}
-            {/* 提示文字（叠加在格子上方） */}
             <p className="absolute inset-0 flex items-center justify-center bg-ink/40 text-base font-bold text-dim/70 backdrop-blur-[2px]">
               自由演奏模式 —— 尽情弹奏
             </p>
@@ -99,28 +112,13 @@ export default function ScoreTrack({
           </p>
         )}
 
-        {/* 进度（自由模式不显示） */}
+        {/* 进度 */}
         {notes.length > 0 && !finished && !freeMode && (
           <p className="pointer-events-none absolute left-4 top-3 z-20 font-mono text-sm text-dim/60">
             {current} / {notes.length}
           </p>
         )}
       </div>
-
-      {/* 通关层：点击任意处重来（仅琴谱模式） */}
-      {finished && !freeMode && typeof document !== "undefined" && createPortal(
-        <div
-          onClick={onRestart}
-          className="fixed inset-0 z-[999] flex cursor-pointer flex-col items-center justify-center gap-4 bg-ink/95 backdrop-blur-lg"
-        >
-          <div className="flex flex-col items-center gap-2">
-            <p className="text-5xl font-black text-gradient">通关！</p>
-            <p className="text-base text-dim">共 {notes.length} 个音符全部正确</p>
-            <p className="mt-4 animate-pulse text-xl text-cyan">点击任意处再来一遍</p>
-          </div>
-        </div>,
-        document.body
-      )}
     </>
   );
 }
