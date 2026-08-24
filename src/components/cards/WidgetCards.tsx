@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import anime from "@/lib/anime";
 import { hitokoto } from "@/data/content";
 import TiltCard from "../TiltCard";
+import Link from "next/link"; // ← 文件顶部如果没有这个 import，加上
 
 // HSL → Hex 转换（配色卡用）
 const hslToHex = (h: number, s: number, l: number) => {
@@ -51,8 +52,10 @@ export function HitokotoCard() {
 }
 
 /* ==================================================================
- * 组件 2：迷你音琴（8 键，Web Audio 合成）
+ * 组件 2：迷你音琴（8 键 + 跳转完整版链接）
  * ================================================================== */
+
+
 const FREQS = [523.25, 587.33, 659.25, 698.46, 783.99, 880.00, 987.77, 1046.50];
 const KEY_LABELS = ["哆", "瑞", "咪", "发", "嗦", "拉", "西", "哆"];
 
@@ -94,7 +97,16 @@ export function PianoCard() {
           </button>
         ))}
       </div>
-      <p className="mt-3 text-center text-[10px] text-dim/50">🎵 点击琴键，弹出你的旋律</p>
+
+      {/* ★ 完整版入口 */}
+      <Link
+        href="/piano"
+        className="mt-3 flex cursor-pointer items-center justify-center gap-2 rounded-full border border-neon/50 bg-neon/10 px-4 py-2 text-xs font-bold text-neon transition-all hover:bg-neon/20 active:scale-95"
+      >
+        🎹 进入完整音琴 —— 9 种乐器 · 琴谱闯关 · 滑动弹奏
+        <span aria-hidden>→</span>
+      </Link>
+      <p className="mt-2 text-center text-[10px] text-dim/50">🎵 上方试音 · 完整版更多功能</p>
     </TiltCard>
   );
 }

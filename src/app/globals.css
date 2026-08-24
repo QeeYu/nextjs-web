@@ -1,11 +1,13 @@
 /* ============================================================
-   全局样式：引入 Tailwind v4，并定义主题变量与通用动画
+   全局样式：Tailwind v4 + 主题变量 + 通用组件类 + 动画关键帧
    ============================================================ */
+
+/* ===== 引入 Tailwind v4（CSS 优先配置，无需 tailwind.config.js）===== */
 @import "tailwindcss";
 
-/* Tailwind v4 主题定制：这些变量会自动生成原子类
-   如 --color-neon → text-neon / bg-neon / border-neon ... */
+/* ===== 主题变量：生成 bg-ink / text-mist / text-neon / anim-float 等原子类 ===== */
 @theme {
+  /* 基础色板 */
   --color-ink: #05060e;      /* 最深层背景 */
   --color-ink-2: #0b0d1d;    /* 次级背景 */
   --color-mist: #e8ecff;     /* 主文字（冷白） */
@@ -14,18 +16,29 @@
   --color-cyan: #38e1ff;     /* 霓虹青 */
   --color-pink: #ff5c8a;     /* 霓虹粉 */
   --color-lime: #b4ff39;     /* 霓虹绿 */
+
+  /* 字体栈（系统字体，离线可用） */
   --font-display: "Avenir", "PingFang SC", "HarmonyOS Sans SC",
                   "Microsoft YaHei", system-ui, sans-serif;
+
+  /* 自定义动画（v4 中 --animate-* 生成 animate-xxx 工具类） */
+  --animate-float: floatY 1.8s ease-in-out infinite;
+  --animate-spin-slow: spin360 16s linear infinite;
+  --animate-glow: glowPulse 3s ease-in-out infinite;
 }
 
-/* ---------- 基础 ---------- */
-html { scroll-behavior: smooth; }            /* 锚点滚动平滑 */
+/* ===== 基础重置 ===== */
+html {
+  scroll-behavior: smooth;        /* 锚点 / 程序滚动平滑 */
+}
 body {
   background: var(--color-ink);
   color: var(--color-mist);
-  overflow-x: hidden;                        /* 防止动画造成横向滚动条 */
+  overflow-x: hidden;             /* 防止动画造成横向滚动条 */
 }
-::selection { background: #7c5cff88; }       /* 文字选中色 */
+::selection {
+  background: #7c5cff88;          /* 文字选中色 */
+}
 
 /* 自定义滚动条 */
 ::-webkit-scrollbar { width: 10px; height: 10px; }
@@ -35,7 +48,7 @@ body {
   border-radius: 8px;
 }
 
-/* ---------- 通用组件类 ---------- */
+/* ===== 通用组件类 ===== */
 
 /* 毛玻璃卡片（全站卡片的基础外观） */
 .card-glass {
@@ -49,9 +62,12 @@ body {
   overflow: hidden;
 }
 
-/* 卡片顶部的彩色流光描边 */
+/* 卡片顶部彩色流光描边 */
 .card-line::before {
-  content: ""; position: absolute; inset: 0 0 auto 0; height: 2px;
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 2px;
   background: linear-gradient(90deg, transparent, #7c5cff, #38e1ff, #ff5c8a, transparent);
   opacity: .8;
 }
@@ -59,16 +75,27 @@ body {
 /* 渐变文字 */
 .text-gradient {
   background: linear-gradient(92deg, #38e1ff, #7c5cff 45%, #ff5c8a);
-  -webkit-background-clip: text; background-clip: text; color: transparent;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
 
-/* 倾斜卡片容器：开启 3D 空间 */
-.tilt-transform { transform-style: preserve-3d; will-change: transform; }
+/* 3D 倾斜卡片容器 */
+.tilt-transform {
+  transform-style: preserve-3d;
+  will-change: transform;
+}
 
 /* 首屏字母初始隐藏（由 anime.js 弹入，避免 JS 执行前闪烁） */
 .hero-letter { opacity: 0; }
 
-/* ---------- 关键帧动画 ---------- */
+/* 语言星环：悬停时暂停旋转 */
+.ring-zone:hover .ring-rot,
+.ring-zone:hover .ring-label-rot { animation-play-state: paused; }
+.ring-rot      { animation: spin360 50s linear infinite; }
+.ring-label-rot{ animation: spinRev360 50s linear infinite; }
+
+/* ===== 关键帧动画 ===== */
 
 /* 向下箭头 / 元素的灵动弹跳 */
 @keyframes floatY {
@@ -79,16 +106,9 @@ body {
 
 /* 旋转一周（环形语言图 / 装饰方块） */
 @keyframes spin360 { to { transform: rotate(360deg); } }
-/* 反向旋转一周（标签保持水平的关键） */
+/* 反向旋转一周（标签保持水平） */
 @keyframes spinRev360 { to { transform: rotate(-360deg); } }
-
-.ring-rot      { animation: spin360 50s linear infinite; }   /* 环形图：正转 */
-.ring-label-rot{ animation: spinRev360 50s linear infinite; }/* 标签：反转 → 永远水平 */
-.anim-spin-slow{ animation: spin360 16s linear infinite; }   /* 慢速自转装饰 */
-
-/* 悬停整个环形区域时暂停旋转，方便阅读与点击 */
-.ring-zone:hover .ring-rot,
-.ring-zone:hover .ring-label-rot { animation-play-state: paused; }
+.anim-spin-slow { animation: spin360 16s linear infinite; }
 
 /* 装饰图形的漂浮漂移 */
 @keyframes blobDrift {
@@ -105,18 +125,136 @@ body {
 }
 .anim-glow { animation: glowPulse 3s ease-in-out infinite; }
 
-/* ---------- 响应式 / 无障碍 ---------- */
+/* ===== 旅程场景动画（深空统一背景专用）===== */
+
+/* 星星闪烁 */
+@keyframes twinkle {
+  0%, 100% { opacity: 0.15; transform: scale(0.7); }
+  50%      { opacity: 1; transform: scale(1.5); }
+}
+.anim-twinkle { animation: twinkle 2.5s ease-in-out infinite; }
+
+/* 星云缓慢脉动 */
+@keyframes nebulaPulse {
+  0%, 100% { opacity: 0.15; transform: scale(1); }
+  50%      { opacity: 0.35; transform: scale(1.15); }
+}
+.anim-nebula { animation: nebulaPulse 8s ease-in-out infinite; }
+
+/* 彗星拖尾划过 */
+@keyframes cometStreak {
+  0%   { transform: translate(0, 0) rotate(-25deg); opacity: 0; }
+  5%   { opacity: 1; }
+  100% { transform: translate(-400px, 200px) rotate(-25deg); opacity: 0; }
+}
+.anim-comet { animation: cometStreak 4s linear infinite; }
+
+/* 轨道环旋转（卫星场景装饰） */
+@keyframes orbitSpin { to { transform: rotate(360deg); } }
+.anim-orbit { animation: orbitSpin 30s linear infinite; }
+
+/* 粒子向中心汇聚（传送门场景） */
+@keyframes converge {
+  0%   { transform: translate(var(--cx, 0), var(--cy, 0)) scale(1.5); opacity: 0; }
+  30%  { opacity: 1; }
+  100% { transform: translate(0, 0) scale(0); opacity: 0; }
+}
+.anim-converge { animation: converge 3s ease-in infinite both; }
+
+/* 文字逐字弹入后的持续呼吸辉光 */
+@keyframes textBreath {
+  0%, 100% { text-shadow: 0 0 20px rgba(124,92,255,0.3); }
+  50%      { text-shadow: 0 0 40px rgba(56,225,255,0.6); }
+}
+.anim-text-glow { animation: textBreath 3s ease-in-out infinite; }
+
+/* ===== 响应式 / 无障碍 ===== */
 
 /* 触摸设备隐藏悬停眩光 */
 @media (hover: none) {
   .only-hover { display: none; }
 }
+
 /* 手机上降低毛玻璃模糊度，提升性能 */
 @media (max-width: 768px) {
-  .card-glass { backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+  .card-glass {
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
 }
-/* 尊重系统“减少动态效果”偏好 */
+
+/* 尊重系统「减少动态效果」偏好 */
 @media (prefers-reduced-motion: reduce) {
   .anim-float, .ring-rot, .ring-label-rot,
-  .anim-blob, .anim-glow, .anim-spin-slow { animation: none !important; }
+  .anim-blob, .anim-glow, .anim-spin-slow,
+  .anim-twinkle, .anim-nebula, .anim-comet,
+  .anim-orbit, .anim-converge, .anim-text-glow {
+    animation: none !important;
+  }
 }
+/* 大文字跟随滑动的水平漂移 */
+@keyframes textSlide {
+  0%, 100% { transform: translateX(0); }
+  50% { transform: translateX(-8px); }
+}
+.anim-text-slide { animation: textSlide 4s ease-in-out infinite; }
+
+/* 收敛环持续旋转 */
+@keyframes convergeSpin { to { transform: rotate(360deg); } }
+.anim-converge-spin { animation: convergeSpin 12s linear infinite; }
+/* 进度条发光脉冲 */
+@keyframes barGlow {
+  0%, 100% { box-shadow: 0 0 4px rgba(124,92,255,0.5); }
+  50% { box-shadow: 0 0 14px rgba(56,225,255,0.8); }
+}
+.anim-bar-glow { animation: barGlow 2s ease-in-out infinite; }
+/* 进度条发光脉冲 */
+@keyframes barGlow {
+  0%, 100% { box-shadow: 0 0 4px rgba(124,92,255,0.5); }
+  50% { box-shadow: 0 0 14px rgba(56,225,255,0.8); }
+}
+.anim-bar-glow { animation: barGlow 2s ease-in-out infinite; }
+
+/* SVG 内部元素持续旋转（非滚动驱动，常驻装饰） */
+@keyframes spinFast { to { transform: rotate(360deg); } }
+.anim-spin-fast { animation: spinFast 8s linear infinite; }
+/* 进度条发光脉冲 */
+@keyframes barGlow {
+  0%, 100% { box-shadow: 0 0 4px rgba(124,92,255,0.5); }
+  50% { box-shadow: 0 0 14px rgba(56,225,255,0.8); }
+}
+.anim-bar-glow { animation: barGlow 2s ease-in-out infinite; }
+
+/* 常驻快速旋转 */
+@keyframes spinFast { to { transform: rotate(360deg); } }
+.anim-spin-fast { animation: spinFast 8s linear infinite; }
+
+/* ===== 音琴页专用 ===== */
+
+/* 按错时当前音符块的抖动 */
+@keyframes noteShake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-6px); }
+  75% { transform: translateX(6px); }
+}
+.anim-note-shake { animation: noteShake 0.3s ease-in-out; }
+
+/* 当前目标音符块的高亮脉冲 */
+@keyframes targetPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(56,225,255,0.5); }
+  50% { box-shadow: 0 0 0 6px rgba(56,225,255,0); }
+}
+.anim-target-pulse { animation: targetPulse 1.2s ease-in-out infinite; }
+/* ===== 音琴页动画 ===== */
+@keyframes noteShake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-6px); }
+  75% { transform: translateX(6px); }
+}
+.anim-note-shake { animation: noteShake 0.3s ease-in-out; }
+
+@keyframes targetPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(56,225,255,0.5); }
+  50% { box-shadow: 0 0 0 8px rgba(56,225,255,0); }
+}
+.anim-target-pulse { animation: targetPulse 1.2s ease-in-out infinite; }

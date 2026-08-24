@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "compress": "node scripts/compress-images.mjs",
+    "build": "npm run compress && next build",
     "start": "next start"
   },
   "dependencies": {
@@ -12,7 +13,8 @@
     "gsap": "^3.12.7",
     "next": "16.3.2",
     "react": "19.2.8",
-    "react-dom": "19.2.8"
+    "react-dom": "19.2.8",
+    "tone": "^15.1.22"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "4.3.3",
@@ -23,12 +25,5 @@
     "sharp": "^0.35.3",
     "tailwindcss": "4.3.3",
     "typescript": "^5.7.2"
-  },
-  "scripts": {
-    "dev": "next dev",
-    "compress": "node scripts/compress-images.mjs",
-    "build": "npm run compress && next build",
-    "start": "next start"
   }
 }
-  
