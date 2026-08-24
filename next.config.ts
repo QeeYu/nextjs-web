@@ -1,9 +1,11 @@
-// Next.js 配置：目前保持极简， StrictMode 帮助在开发期发现副作用问题
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
-  output: "export", // 静态导出（SSG），不依赖 Node.js 服务器
+  output: "export", // 静态导出
+  images: {
+    unoptimized: true, // ← 逗号 + 只留这一行（其余两项在静态导出下无效，删掉）
+  },
 };
 
 export default nextConfig;

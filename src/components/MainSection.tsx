@@ -9,7 +9,7 @@ import LanguageRingCard from "./cards/LanguageRingCard";
 import SkillsCard from "./cards/SkillsCard";
 import AlbumCard from "./cards/AlbumCard";
 import DiaryCard from "./cards/DiaryCard";
-import { HitokotoCard, PianoCard, BubbleCard, FortuneCard } from "./cards/WidgetCards";
+import { HitokotoCard, PianoCard, FortuneCard, DiceRoller, ColorPalette, ReactionTimer } from "./cards/WidgetCards";
 
 /** 两页共用的页头（含跳转到另一页的锚点按钮） */
 function PageHeader({
@@ -95,11 +95,13 @@ export default function MainSection() {
             </Reveal>
 
             {/* 四个小插件：手机 1 列 / 小屏 2 列 / 桌面 4 列 */}
-            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-4">
-              <Reveal><HitokotoCard /></Reveal>
-              <Reveal delay={80}><PianoCard /></Reveal>
-              <Reveal delay={160}><BubbleCard /></Reveal>
-              <Reveal delay={240}><FortuneCard /></Reveal>
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3">
+                <Reveal><HitokotoCard /></Reveal>
+                <Reveal delay={60}><PianoCard /></Reveal>
+                <Reveal delay={120}><FortuneCard /></Reveal>
+                <Reveal delay={180}><DiceRoller /></Reveal>
+                <Reveal delay={240}><ColorPalette /></Reveal>
+                <Reveal delay={300}><ReactionTimer /></Reveal>
             </div>
           </div>
         </section>

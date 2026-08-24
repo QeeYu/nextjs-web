@@ -93,3 +93,38 @@ export const hitokoto = [
   "人生没有 Ctrl+Z，所以更要认真生活。",
   "慢慢来，比较快。",
 ];
+// —— 旅程面板数据（文字内容在这里改）——
+export interface JourneyStat {
+  value: number;
+  suffix: string;
+  label: string;
+}
+export interface JourneyPanel {
+  chapter: string;          // 章节标签
+  titleBefore: string;      // 标题前半
+  titleHighlight: string;   // 标题高亮部分（text-gradient）
+  titleAfter: string;       // 标题后半（含 emoji）
+  text?: string;            // 正文（\n 换行）
+  stats?: JourneyStat[];    // 数字统计（面板 3 用）
+  tags?: string[];           // 技术词条（面板 5 用）
+  accent: string;            // 章节标签颜色类名
+}
+export const journeyPanels: JourneyPanel[] = [
+  { chapter: "CHAPTER 01", titleBefore: "一切，", titleHighlight: "从这里开始", titleAfter: "",
+    text: "欢迎来到 QeeYu 的小宇宙 \n这段向左流动的画面，是我送你的开场动画 ——\n请系好安全带，我们出发。", accent: "text-cyan" },
+  { chapter: "CHAPTER 02 · 热爱", titleBefore: "为热爱 ", titleHighlight: "发电", titleAfter: " 🔥",
+    text: "白天写代码，晚上调动画；\n把每一个像素，都当作作品来雕琢。", accent: "text-pink" },
+  { chapter: "CHAPTER 03 · 数字", titleBefore: "一些", titleHighlight: "奇怪的统计", titleAfter: " 📊",
+    stats: [
+      { value: 1,   suffix: " 个", label: "Hello World" },   // 第一个程序
+      { value: 99,  suffix: " +", label: "Bug 已修复" },    // 修了99个bug
+      { value: 3,   suffix: " 个", label: "失眠夜" },        // 熬夜三次
+      { value: 0,   suffix: " 的", label: "Offer 已收到" },  // 还没找到工作（哈哈）  
+    ], accent: "text-lime" },
+  { chapter: "CHAPTER 04 · 哲学", titleBefore: "动画，是页面的", titleHighlight: "呼吸", titleAfter: " 🌬️",
+    text: "一次缓动、一帧延迟、一点过冲，\n都是人机之间无声的悄悄话。", accent: "text-cyan" },
+  { chapter: "CHAPTER 05 · 装备", titleBefore: "我的", titleHighlight: "工具箱", titleAfter: " 🧰",
+    tags: ["React", "Next.js", "TypeScript", "Tailwind", "GSAP", "anime.js", "Canvas", "Node.js"], accent: "text-neon" },
+  { chapter: "CHAPTER 06 · 抵达", titleBefore: "欢迎来到", titleHighlight: "我的主页", titleAfter: " 🎉",
+    text: "开场动画到此结束，\n故事才刚刚开始 —— 继续下滑，去认识一个更完整的 QeeYu。", accent: "text-pink" },
+];

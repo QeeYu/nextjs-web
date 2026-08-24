@@ -139,7 +139,7 @@ export default function HeroSection() {
 
       {/* 右下角装饰文字 */}
       <div className="absolute bottom-4 right-5 z-10 font-mono text-[10px] text-dim/50">
-        QEEYU.DEV — 2025
+        QEEYU.DEV-2026
       </div>
     </section>
   );
