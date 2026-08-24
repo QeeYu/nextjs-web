@@ -50,7 +50,7 @@ export default function DiaryCard() {
         <nav className="flex w-20 flex-shrink-0 flex-col gap-1.5 overflow-y-auto pr-1">
           {diary.map((it, i) => (
             <button
-              key={it.date}
+              key={`${it.date}-${i}`}
               onClick={() => select(i)}
               // 选中态：渐变底 + 青色文字；未选中：透明底 + 灰字
               className={`cursor-pointer rounded-lg px-2 py-2 text-left transition-all duration-300 ${
