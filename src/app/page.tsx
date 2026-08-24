@@ -3,14 +3,12 @@
 import { useEffect } from "react";
 import dynamic from "next/dynamic";
 import HeroSection from "@/components/HeroSection";
+import MainSection from "@/components/MainSection";  // ★ 常规导入 → JS 进主包，和 Hero 一起最先加载
 
-// ★ 动态导入：JS 拆成独立 chunk，首屏只加载 Hero
-// 构建时仍预渲染 HTML（用户立即看到内容），JS 在后台异步加载
+// 只有 Journey 用 dynamic 分包（GSAP 较大，延迟加载不影响首屏）
 const JourneySection = dynamic(() => import("@/components/JourneySection"));
-const MainSection = dynamic(() => import("@/components/MainSection"));
 
 export default function Home() {
-  // 刷新保持滚动位置
   useEffect(() => {
     if ("scrollRestoration" in history) history.scrollRestoration = "manual";
     const save = () => { try { sessionStorage.setItem("scrollY", String(window.scrollY)); } catch {} };
