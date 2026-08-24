@@ -100,25 +100,29 @@ export default function AlbumCard() {
             )}
           </div>
 
-          {/* ★ 左切换按钮（点按钮不关闭 → stopPropagation） */}
+          {/* ★ 左切换按钮（SVG 箭头，几何居中不歪） */}
           {album.length > 1 && (
             <button
               onClick={(e) => { e.stopPropagation(); switchPhoto(-1); }}
               aria-label="上一张"
-              className="absolute left-6 top-1/2 flex h-14 w-14 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full bg-white/10 text-3xl text-white transition-all hover:scale-110 hover:bg-neon/60 active:scale-95"
+              className="absolute left-6 top-1/2 flex h-14 w-14 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full bg-white/10 text-white transition-all hover:scale-110 hover:bg-neon/60 active:scale-95"
             >
-              ‹
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden>
+                <path d="M15 5l-7 7 7 7" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
             </button>
           )}
 
-          {/* ★ 右切换按钮 */}
+          {/* ★ 右切换按钮（SVG 箭头，几何居中不歪） */}
           {album.length > 1 && (
             <button
               onClick={(e) => { e.stopPropagation(); switchPhoto(1); }}
               aria-label="下一张"
-              className="absolute right-6 top-1/2 flex h-14 w-14 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full bg-white/10 text-3xl text-white transition-all hover:scale-110 hover:bg-neon/60 active:scale-95"
+              className="absolute right-6 top-1/2 flex h-14 w-14 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full bg-white/10 text-white transition-all hover:scale-110 hover:bg-neon/60 active:scale-95"
             >
-              ›
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden>
+                <path d="M9 5l7 7-7 7" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
             </button>
           )}
 
@@ -127,9 +131,13 @@ export default function AlbumCard() {
             {album[lightbox].title}
           </p>
 
-          {/* 关闭按钮（右上角） */}
+          {/* 关闭按钮（SVG，居中不歪） */}
           <button onClick={closeBox} aria-label="关闭"
-            className="absolute right-6 top-6 flex h-10 w-10 cursor-pointer items-center justify-center rounded-full bg-white/10 text-xl text-white transition-colors hover:bg-pink/80">✕</button>
+            className="absolute right-6 top-6 flex h-10 w-10 cursor-pointer items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-pink/80">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
+              <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+            </svg>
+          </button>
 
           {/* 索引（右下角）+ 键盘提示 */}
           <p className="pointer-events-none absolute bottom-6 right-6 rounded bg-black/40 px-2 py-0.5 font-mono text-xs text-white/80">
