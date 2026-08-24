@@ -1,9 +1,8 @@
 "use client";
 
-import { useRef, useState } from "react";
-import { createPortal } from "react-dom";  // ★ 渲染到 body，绕过卡片祖先的 transform
+import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import Image from "next/image";
-import anime from "@/lib/anime";
 import { album } from "@/data/content";
 import TiltCard from "../TiltCard";
 
@@ -36,19 +35,30 @@ function Thumbnail({ photo, onOpen }: {
 
 export default function AlbumCard() {
   const [lightbox, setLightbox] = useState<number | null>(null);
-  const boxRef = useRef<HTMLDivElement>(null);
+  const [show, setShow] = useState(false);
+  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // 打开：挂载 → 下一帧淡入（CSS 过渡，不卡）
   const openBox = (i: number) => {
+    if (closeTimer.current) { clearTimeout(closeTimer.current); closeTimer.current = null; }
     setLightbox(i);
-    requestAnimationFrame(() => {
-      anime.remove(boxRef.current);
-      anime({ targets: boxRef.current, scale: [0.85, 1], opacity: [0, 1], duration: 420, easing: "easeOutBack" });
-    });
+    requestAnimationFrame(() => requestAnimationFrame(() => setShow(true)));
   };
+
+  // ★ 关闭：淡出 → 200ms 后卸载。点哪都调这个
   const closeBox = () => {
-    anime({ targets: boxRef.current, scale: 0.9, opacity: 0, duration: 260, easing: "easeInQuad",
-      complete: () => setLightbox(null) });
+    if (closeTimer.current) clearTimeout(closeTimer.current);
+    setShow(false);
+    closeTimer.current = setTimeout(() => setLightbox(null), 200);
   };
+
+  // Esc 关闭
+  useEffect(() => {
+    if (lightbox === null) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") closeBox(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [lightbox]);
 
   return (
     <>
@@ -65,17 +75,13 @@ export default function AlbumCard() {
         <p className="mt-4 text-center text-[11px] text-dim/60">📸 记录下的瞬间</p>
       </TiltCard>
 
-      {/* ★ 用 createPortal 渲染到 document.body → 绕过所有卡片祖先的 transform/perspective 限制 */}
+      {/* ★ createPortal 到 body + CSS opacity 过渡（无 anime.js = 不卡）+ 点哪都关 */}
       {lightbox !== null && typeof document !== "undefined" && createPortal(
         <div
           onClick={closeBox}
-          onKeyDown={(e) => { if (e.key === "Escape") closeBox(); }}
-          tabIndex={0}
-          className="fixed inset-0 z-[200] bg-black/95 p-8 backdrop-blur-md"
+          className={`fixed inset-0 z-[200] bg-black/95 p-8 transition-opacity duration-200 ${show ? "opacity-100" : "opacity-0"}`}
         >
-          {/* 图片容器（缩放动画目标） */}
-          <div ref={boxRef} onClick={(e) => e.stopPropagation()}
-            className="relative h-full w-full">
+          <div className="relative h-full w-full">
             {album[lightbox].src ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={album[lightbox].src} alt={album[lightbox].title}
@@ -84,14 +90,11 @@ export default function AlbumCard() {
               <span className="absolute inset-0 flex items-center justify-center text-8xl">{album[lightbox].emoji}</span>
             )}
           </div>
-          {/* 标题（底部居中） */}
           <p className="pointer-events-none absolute bottom-6 left-1/2 -translate-x-1/2 text-lg font-black text-white drop-shadow-md">
             {album[lightbox].title}
           </p>
-          {/* 关闭按钮（右上角） */}
           <button onClick={closeBox} aria-label="关闭"
             className="absolute right-6 top-6 flex h-10 w-10 cursor-pointer items-center justify-center rounded-full bg-white/10 text-xl text-white transition-colors hover:bg-pink/80">✕</button>
-          {/* 索引（右下角） */}
           <p className="pointer-events-none absolute bottom-6 right-6 rounded bg-black/40 px-2 py-0.5 font-mono text-xs text-white/80">
             {lightbox + 1} / {album.length}
           </p>
