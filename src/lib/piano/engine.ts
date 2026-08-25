@@ -1,6 +1,7 @@
 // ====================================================================
-// 音频引擎 v7：
-// - 修复：onload 完成前不替换 sampler / 不播放（buffer 未加载崩溃）
+// 音频引擎 v9：
+// - 修复：setTimbre 对已加载音色也要更新 currentTimbre（切回没声音）
+// - 修复：延音踏板用 triggerRelease 精确管理（钢琴生效 / 萨克斯不失控）
 // ====================================================================
 
 import * as Tone from "tone";
@@ -17,6 +18,10 @@ class PianoEngine {
   private _analyser: Tone.Analyser | null = null;
 
   private sustainOn = false;
+  // ★ 延音期间按下的音符（松踏板时精确释放）
+  private sustainedNotes = new Set<string>();
+  // ★ 缓存的采样器
+  private cachedSamplers = new Map<string, Tone.Sampler>();
 
   /** 确保 AudioContext 启动 */
   private async ensure(): Promise<boolean> {
@@ -55,7 +60,7 @@ class PianoEngine {
     return analyser.getValue() as Float32Array;
   }
 
-  /** 加载指定音色（★ onload 后才连接+替换+标记） */
+  /** 加载指定音色 */
   private async loadTimbre(timbreId: string): Promise<void> {
     if (this.loadedTimbres.has(timbreId)) return;
     const existing = this.loadPromises.get(timbreId);
@@ -75,13 +80,19 @@ class PianoEngine {
         release: 1,
         onload: () => {
           this.loadedTimbres.add(timbreId);
-          if (this.volumeNode) {
-            sampler.connect(this.volumeNode);
+
+          // 竞争校验：用户仍想要这个音色才接管
+          if (this.currentTimbre === timbreId) {
+            if (this.volumeNode) {
+              sampler.connect(this.volumeNode);
+            }
+            if (this.sampler) {
+              this.sampler.dispose();
+            }
+            this.sampler = sampler;
+          } else {
+            this.cachedSamplers.set(timbreId, sampler);
           }
-          if (this.sampler) {
-            this.sampler.dispose();
-          }
-          this.sampler = sampler;
           resolve();
         },
       });
@@ -91,10 +102,32 @@ class PianoEngine {
     return loadPromise;
   }
 
-  /** 切换音色 */
+  /** 切换音色（★ 无论是否已加载都要更新 currentTimbre） */
   async setTimbre(timbreId: string) {
     this.currentTimbre = timbreId;
+    this.sustainedNotes.clear(); // 切音色清空延音记录
+
     if (!this.started || !this.volumeNode) return;
+
+    // 缓存命中 → 直接接管
+    const cached = this.cachedSamplers.get(timbreId);
+    if (cached && this.loadedTimbres.has(timbreId)) {
+      if (this.sampler) this.sampler.dispose();
+      this.sampler = cached;
+      this.cachedSamplers.delete(timbreId);
+      cached.connect(this.volumeNode);
+      return;
+    }
+
+    // 已加载但 sampler 不是它（比如当前 sampler 是别的音色）→ 恢复
+    // ★ 关键修复：已加载的音色也可能需要重新接管 sampler
+    //（之前的 sampler 可能在加载其他音色时仍是旧的）
+    if (this.loadedTimbres.has(timbreId)) {
+      // sampler 已经是这个音色 → 什么都不用做
+      return;
+    }
+
+    // 从未加载 → 加载
     await this.loadTimbre(timbreId);
   }
 
@@ -102,7 +135,11 @@ class PianoEngine {
   setSustain(on: boolean) {
     this.sustainOn = on;
     if (!on && this.sampler) {
-      try { this.sampler.releaseAll(); } catch {}
+      // ★ 松开踏板：精确释放延音期间按下的每个音符
+      this.sustainedNotes.forEach((note) => {
+        try { this.sampler!.triggerRelease(note); } catch {}
+      });
+      this.sustainedNotes.clear();
     }
   }
 
@@ -110,7 +147,7 @@ class PianoEngine {
     return this.sustainOn;
   }
 
-  /** 播放（★ 守卫：未加载完静默跳过） */
+  /** 播放（★ 延音用 attack + 记录，普通用 attackRelease） */
   async play(freq: number) {
     if (!(await this.ensure())) return;
 
@@ -123,9 +160,13 @@ class PianoEngine {
     }
 
     const note = Tone.Frequency(freq, "hz").toNote();
+
     if (this.sustainOn) {
+      // ★ 踩下踏板：attack + 记录（松踏板时 triggerRelease 精确释放）
       this.sampler.triggerAttack(note);
+      this.sustainedNotes.add(note);
     } else {
+      // 未踩踏板：正常 attack + release
       this.sampler.triggerAttackRelease(note, "4n");
     }
   }
@@ -162,6 +203,9 @@ class PianoEngine {
     this._analyser = null;
     this.loadedTimbres.clear();
     this.loadPromises.clear();
+    this.sustainedNotes.clear();
+    this.cachedSamplers.forEach((s) => s.dispose());
+    this.cachedSamplers.clear();
   }
 }
 

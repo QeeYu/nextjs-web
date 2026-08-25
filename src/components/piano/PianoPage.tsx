@@ -306,20 +306,18 @@ export default function PianoPage() {
     setTimbreReady(null);
     if (readyTimer.current) clearTimeout(readyTimer.current);
 
-    // 已加载过的音色 → 直接提示就绪
-    if (engine.isTimbreLoaded(id)) {
+    // ★ 无论是否已加载都调用 engine.setTimbre（更新 currentTimbre）
+    if (!engine.isTimbreLoaded(id)) {
+      // 未加载 → 显示加载中
+      setLoadingTimbre(id);
+      await engine.setTimbre(id);
       setLoadingTimbre(null);
-      const name = TIMBRE_LIST.find((t) => t.id === id)?.name ?? "";
-      setTimbreReady(name);
-      readyTimer.current = setTimeout(() => setTimbreReady(null), 3000);
-      try { localStorage.setItem(STORAGE_KEYS.timbre, id); } catch {}
-      return;
+    } else {
+      // 已加载 → 直接切换（内部秒回，无等待）
+      await engine.setTimbre(id);
     }
 
-    // 未加载 → 加载中 → 完成后提示就绪 3 秒
-    setLoadingTimbre(id);
-    await engine.setTimbre(id);
-    setLoadingTimbre(null);
+    // 就绪提示
     const name = TIMBRE_LIST.find((t) => t.id === id)?.name ?? "";
     setTimbreReady(name);
     readyTimer.current = setTimeout(() => setTimbreReady(null), 3000);
@@ -384,35 +382,49 @@ export default function PianoPage() {
 
   const toggleSustain = () => setSustainOn((v) => !v);
 
-  // ===== 延音踏板（公共渲染） =====
+  // ===== 延音踏板（公共渲染 · 窄屏自适应三档） =====
   const sustainPedal = (
     <button
       onPointerDown={(e) => { e.preventDefault(); toggleSustain(); }}
       aria-pressed={sustainOn}
-      className={`relative flex w-[96px] flex-shrink-0 cursor-pointer touch-none select-none flex-col items-center justify-center gap-1.5 border-l-4 transition-all duration-150 md:w-[120px] ${
+      className={`relative flex w-[60px] flex-shrink-0 cursor-pointer touch-none select-none flex-col items-center justify-center gap-1 border-l-[3px] transition-all duration-150 sm:w-[80px] sm:gap-1.5 sm:border-l-4 md:w-[110px] ${
         sustainOn
           ? "border-l-cyan bg-linear-to-r from-neon/20 via-cyan/30 to-cyan/40 shadow-[inset_0_0_30px_rgba(56,225,255,0.45)]"
           : "border-l-white/25 bg-linear-to-r from-[#0a0b12] to-[#22242f] shadow-[inset_6px_0_20px_rgba(0,0,0,0.6)]"
       }`}
     >
-      <div className={`pointer-events-none absolute inset-y-6 left-2.5 w-2 rounded-full transition-all duration-150 ${
+      {/* 金属高光 */}
+      <div className={`pointer-events-none absolute inset-y-4 left-1.5 w-1.5 rounded-full transition-all duration-150 sm:inset-y-6 sm:left-2.5 sm:w-2 ${
         sustainOn ? "bg-cyan/70 blur-[2px]" : "bg-white/15 blur-[2px]"
       }`} />
-      <div className={`pointer-events-none absolute left-1/2 top-3 h-3.5 w-3.5 -translate-x-1/2 rounded-full transition-all duration-150 ${
+
+      {/* 指示灯 */}
+      <div className={`pointer-events-none absolute left-1/2 top-2 h-2.5 w-2.5 -translate-x-1/2 rounded-full transition-all duration-150 sm:top-3 sm:h-3.5 sm:w-3.5 ${
         sustainOn ? "bg-cyan shadow-[0_0_14px_rgba(56,225,255,1)]" : "bg-white/20"
       }`} />
-      <span className={`text-base font-black tracking-[0.35em] transition-colors md:text-lg ${
+
+      {/* 中文竖排（字号自适应） */}
+      <span className={`text-xs font-black tracking-[0.25em] transition-colors sm:text-sm sm:tracking-[0.35em] md:text-lg ${
         sustainOn ? "text-cyan drop-shadow-[0_0_8px_rgba(56,225,255,0.8)]" : "text-dim"
       }`}
         style={{ writingMode: "vertical-rl" }}>
         延音踏板
       </span>
-      <span className={`text-lg font-black transition-colors ${
+
+      {/* 开/关（sm 起显示大字） */}
+      <span className={`hidden text-lg font-black transition-colors sm:block ${
         sustainOn ? "text-cyan drop-shadow-[0_0_6px_rgba(56,225,255,0.6)]" : "text-dim/60"
       }`}>
         {sustainOn ? "开" : "关"}
       </span>
-      <span className="rounded-md bg-white/10 px-2 py-0.5 text-xs font-bold text-mist/70">
+
+      {/* 窄屏小圆点开关指示 */}
+      <span className={`block h-2 w-2 rounded-full transition-colors sm:hidden ${
+        sustainOn ? "bg-cyan" : "bg-white/20"
+      }`} />
+
+      {/* 按键提示（窄屏隐藏，sm 起显示） */}
+      <span className="hidden rounded-md bg-white/10 px-1.5 py-0.5 text-[10px] font-bold text-mist/70 sm:block sm:px-2 sm:text-xs">
         {keyDisplayName(specialKeys.sustain)}
       </span>
     </button>
@@ -420,42 +432,51 @@ export default function PianoPage() {
 
   return (
     <div className="relative flex h-[100svh] flex-col overflow-hidden bg-ink text-mist">
-      {/* ===== 顶栏 ===== */}
-      <header ref={headerRef} className="z-20 flex flex-shrink-0 items-center gap-2 border-b border-white/10 bg-ink px-3 py-2">
-        <Link href="/" className="rounded-full border border-white/15 px-3 py-1.5 text-sm text-dim transition-colors hover:border-cyan/50 hover:text-cyan">
+      {/* ===== 顶栏（窄屏自适应：分层隐藏，杜绝挤压） ===== */}
+      <header ref={headerRef} className="z-20 flex flex-shrink-0 items-center gap-1.5 overflow-x-auto border-b border-white/10 bg-ink px-2 py-2 sm:gap-2 sm:px-3">
+        <Link href="/" className="flex-shrink-0 rounded-full border border-white/15 px-2.5 py-1.5 text-xs text-dim transition-colors hover:border-cyan/50 hover:text-cyan sm:px-3 sm:text-sm">
           ← 返回
         </Link>
-        <h1 className="text-base font-black text-gradient">QeeYu 音琴</h1>
+
+        {/* 标题：中等宽度起显示完整 */}
+        <h1 className="hidden flex-shrink-0 text-base font-black text-gradient sm:block">QeeYu 音琴</h1>
+
+        {/* 窄屏简化标题 */}
+        <span className="flex-shrink-0 text-sm font-black text-gradient sm:hidden">音琴</span>
+
         <div className="flex-1" />
 
-        <div className="flex overflow-hidden rounded-full border border-white/15">
+        {/* 模式切换（窄屏紧凑） */}
+        <div className="flex flex-shrink-0 overflow-hidden rounded-full border border-white/15">
           <button onClick={() => changeMode("score")}
-            className={`px-4 py-1.5 text-sm transition-colors ${mode === "score" ? "bg-cyan/20 text-cyan" : "text-dim hover:text-mist"}`}>
+            className={`px-2.5 py-1.5 text-xs transition-colors sm:px-4 sm:text-sm ${mode === "score" ? "bg-cyan/20 text-cyan" : "text-dim hover:text-mist"}`}>
             琴谱
           </button>
           <button onClick={() => changeMode("free")}
-            className={`px-4 py-1.5 text-sm transition-colors ${mode === "free" ? "bg-cyan/20 text-cyan" : "text-dim hover:text-mist"}`}>
+            className={`px-2.5 py-1.5 text-xs transition-colors sm:px-4 sm:text-sm ${mode === "free" ? "bg-cyan/20 text-cyan" : "text-dim hover:text-mist"}`}>
             自由
           </button>
         </div>
 
-        <div className="flex items-center gap-1 rounded-full border border-white/15 px-1">
+        {/* 八度控制（紧凑版） */}
+        <div className="flex flex-shrink-0 items-center gap-0.5 rounded-full border border-white/15 px-0.5 sm:gap-1 sm:px-1">
           <button onClick={() => changeOctave(Math.max(1, baseOctave - 1))}
-            className="h-7 w-7 cursor-pointer rounded-full text-base text-mist hover:bg-white/10 disabled:opacity-30"
+            className="h-6 w-6 cursor-pointer rounded-full text-sm text-mist hover:bg-white/10 disabled:opacity-30 sm:h-7 sm:w-7 sm:text-base"
             disabled={baseOctave <= 1}>−</button>
-          <span className="font-mono text-sm font-black text-cyan">C{baseOctave}</span>
+          <span className="flex-shrink-0 font-mono text-xs font-black text-cyan sm:text-sm">C{baseOctave}</span>
           <button onClick={() => changeOctave(Math.min(5, baseOctave + 1))}
-            className="h-7 w-7 cursor-pointer rounded-full text-base text-mist hover:bg-white/10 disabled:opacity-30"
+            className="h-6 w-6 cursor-pointer rounded-full text-sm text-mist hover:bg-white/10 disabled:opacity-30 sm:h-7 sm:w-7 sm:text-base"
             disabled={baseOctave >= 5}>＋</button>
         </div>
 
-        <span className="hidden font-mono text-xs text-dim sm:block">{keyCount}键</span>
-        <span className="hidden font-mono text-xs text-dim sm:block">
+        {/* 键数 + 音色（md 起显示） */}
+        <span className="hidden flex-shrink-0 font-mono text-xs text-dim md:block">{keyCount}键</span>
+        <span className="hidden flex-shrink-0 font-mono text-xs text-dim md:block xl:block">
           {TIMBRE_LIST.find((t) => t.id === timbre)?.name}
         </span>
 
         <button onClick={() => setSettingsOpen(true)}
-          className="cursor-pointer rounded-full border border-neon/40 px-5 py-1.5 text-sm text-neon transition-colors hover:bg-neon/15">
+          className="flex-shrink-0 cursor-pointer rounded-full border border-neon/40 px-3 py-1.5 text-xs text-neon transition-colors hover:bg-neon/15 sm:px-5 sm:text-sm">
           设置
         </button>
       </header>
@@ -469,7 +490,7 @@ export default function PianoPage() {
         </div>
       )}
 
-      {/* ===== ★ 悬浮通知（加载中 / 已就绪，fixed 定位不影响布局） ===== */}
+      {/* ===== 悬浮通知（加载中 / 已就绪，fixed 定位不影响布局） ===== */}
       {(loadingTimbre || timbreReady) && (
         <div
           ref={notifyRef}
