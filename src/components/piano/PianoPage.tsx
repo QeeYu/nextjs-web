@@ -19,8 +19,8 @@ type Mode = "score" | "free";
 export default function PianoPage() {
   // ===== 核心状态 =====
   const [timbre, setTimbre] = useState<string>("piano");
-  const [volume, setVolume] = useState<number>(0.4); // 默认音量 40%
-  const [baseOctave, setBaseOctave] = useState<number>(3);
+  const [volume, setVolume] = useState<number>(0.4); // 默认 40%
+  const [baseOctave, setBaseOctave] = useState<number>(3); // 默认 C3
   const [keyCount, setKeyCount] = useState<number>(37);
   const [keymap, setKeymap] = useState<Record<string, number>>({ ...DEFAULT_KEYMAP });
   const [pressedKeys, setPressedKeys] = useState<Set<number>>(new Set());
@@ -44,17 +44,17 @@ export default function PianoPage() {
   const [current, setCurrent] = useState(0);
   const [wrongFlash, setWrongFlash] = useState(0);
 
-  // ===== 提示 =====
+    // ===== 提示 =====
   const [audioReady, setAudioReady] = useState(false);
   const [loadingTimbre, setLoadingTimbre] = useState<string | null>(null);
-  // 加载完成提示（留存 3 秒）
   const [timbreReady, setTimbreReady] = useState<string | null>(null);
+  const [timbreFailed, setTimbreFailed] = useState<string | null>(null); // ★ 失败 toast
   const readyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const notifyRef = useRef<HTMLDivElement>(null);
 
   const keys = useMemo(() => buildKeys(baseOctave, keyCount), [baseOctave, keyCount]);
 
-  // ===== 顶栏实测高度（用于精确补偿旋转偏移） =====
+  // ===== 顶栏实测高度 =====
   const headerRef = useRef<HTMLElement>(null);
   const [headerH, setHeaderH] = useState(56);
 
@@ -69,7 +69,7 @@ export default function PianoPage() {
     requestAnimationFrame(measureHeader);
     setTimeout(measureHeader, 200);
     setTimeout(measureHeader, 500);
-  }, [audioReady]); // 悬浮通知不占布局，仅 audioReady 变化时重测
+  }, [audioReady]);
 
   // ===== localStorage 恢复 =====
   useEffect(() => {
@@ -77,7 +77,7 @@ export default function PianoPage() {
       const savedTimbre = localStorage.getItem(STORAGE_KEYS.timbre);
       if (savedTimbre && TIMBRE_LIST.some((t) => t.id === savedTimbre)) {
         setTimbre(savedTimbre);
-        void engine.setTimbre(savedTimbre);
+        void engine.setTimbre(savedTimbre); // 挂载即预加载
       }
       const savedVolume = localStorage.getItem(STORAGE_KEYS.volume);
       if (savedVolume !== null) {
@@ -134,7 +134,7 @@ export default function PianoPage() {
     engine.setSustain(sustainOn);
   }, [sustainOn]);
 
-  // ===== 首次激活音频后，采样就绪提示（悬浮通知 3 秒） =====
+  // ===== 首次激活音频后，采样就绪提示 =====
   useEffect(() => {
     if (!audioReady || !engine.isTimbreLoaded(timbre)) return;
     const name = TIMBRE_LIST.find((t) => t.id === timbre)?.name ?? "";
@@ -146,7 +146,7 @@ export default function PianoPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [audioReady, timbre, loadingTimbre]);
 
-  // ===== 悬浮通知弹入动画（timbreReady 出现时） =====
+  // ===== 悬浮通知弹入动画 =====
   useEffect(() => {
     if (timbreReady && notifyRef.current) {
       anime.remove(notifyRef.current);
@@ -160,7 +160,7 @@ export default function PianoPage() {
     }
   }, [timbreReady]);
 
-  // ===== 清理就绪提示计时器 =====
+  // ===== 清理计时器 =====
   useEffect(() => {
     return () => {
       if (readyTimer.current) clearTimeout(readyTimer.current);
@@ -300,20 +300,43 @@ export default function PianoPage() {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [keymap, pressPos, remapMode, remapTarget, keys.length, nameOfPos, settingsOpen, specialKeys]);
 
-  // ===== 设置变更 =====
-  const changeTimbre = async (id: string) => {
+  // ==================================================================
+  // ===== ★ changeTimbre（v13：await setTimbre + 轮询双条件就绪/超时）
+  // ==================================================================
+    const changeTimbre = async (id: string) => {
     setTimbre(id);
     setTimbreReady(null);
+    setTimbreFailed(null); // 清失败提示
     if (readyTimer.current) clearTimeout(readyTimer.current);
 
-    // ★ 无论是否已加载都调用 engine.setTimbre（更新 currentTimbre）
     if (!engine.isTimbreLoaded(id)) {
-      // 未加载 → 显示加载中
+      // 未加载 → 显示加载中 + 发起加载
       setLoadingTimbre(id);
       await engine.setTimbre(id);
+
+      // 轮询等待（就绪 或 超时）
+      const startTime = Date.now();
+      await new Promise<void>((resolve) => {
+        const check = () => {
+          if (engine.isTimbreLoaded(id)) { resolve(); return; }
+          if (engine.getTimbreState(id) === "timeout") { resolve(); return; }
+          if (Date.now() - startTime > 46000) { resolve(); return; }
+          setTimeout(check, 300);
+        };
+        check();
+      });
+
       setLoadingTimbre(null);
+
+      // 超时且未就绪 → 页面内失败 toast（5 秒后消失）
+      if (!engine.isTimbreLoaded(id)) {
+        const name = TIMBRE_LIST.find((t) => t.id === id)?.name ?? id;
+        setTimbreFailed(name);
+        setTimeout(() => setTimbreFailed(null), 5000);
+        return;
+      }
     } else {
-      // 已加载 → 直接切换（内部秒回，无等待）
+      // 已加载 → 更新 currentTimbre
       await engine.setTimbre(id);
     }
 
@@ -382,7 +405,7 @@ export default function PianoPage() {
 
   const toggleSustain = () => setSustainOn((v) => !v);
 
-  // ===== 延音踏板（公共渲染 · 窄屏自适应三档） =====
+  // ===== 延音踏板（公共渲染 · 三档自适应） =====
   const sustainPedal = (
     <button
       onPointerDown={(e) => { e.preventDefault(); toggleSustain(); }}
@@ -393,37 +416,26 @@ export default function PianoPage() {
           : "border-l-white/25 bg-linear-to-r from-[#0a0b12] to-[#22242f] shadow-[inset_6px_0_20px_rgba(0,0,0,0.6)]"
       }`}
     >
-      {/* 金属高光 */}
       <div className={`pointer-events-none absolute inset-y-4 left-1.5 w-1.5 rounded-full transition-all duration-150 sm:inset-y-6 sm:left-2.5 sm:w-2 ${
         sustainOn ? "bg-cyan/70 blur-[2px]" : "bg-white/15 blur-[2px]"
       }`} />
-
-      {/* 指示灯 */}
       <div className={`pointer-events-none absolute left-1/2 top-2 h-2.5 w-2.5 -translate-x-1/2 rounded-full transition-all duration-150 sm:top-3 sm:h-3.5 sm:w-3.5 ${
         sustainOn ? "bg-cyan shadow-[0_0_14px_rgba(56,225,255,1)]" : "bg-white/20"
       }`} />
-
-      {/* 中文竖排（字号自适应） */}
       <span className={`text-xs font-black tracking-[0.25em] transition-colors sm:text-sm sm:tracking-[0.35em] md:text-lg ${
         sustainOn ? "text-cyan drop-shadow-[0_0_8px_rgba(56,225,255,0.8)]" : "text-dim"
       }`}
         style={{ writingMode: "vertical-rl" }}>
         延音踏板
       </span>
-
-      {/* 开/关（sm 起显示大字） */}
       <span className={`hidden text-lg font-black transition-colors sm:block ${
         sustainOn ? "text-cyan drop-shadow-[0_0_6px_rgba(56,225,255,0.6)]" : "text-dim/60"
       }`}>
         {sustainOn ? "开" : "关"}
       </span>
-
-      {/* 窄屏小圆点开关指示 */}
       <span className={`block h-2 w-2 rounded-full transition-colors sm:hidden ${
         sustainOn ? "bg-cyan" : "bg-white/20"
       }`} />
-
-      {/* 按键提示（窄屏隐藏，sm 起显示） */}
       <span className="hidden rounded-md bg-white/10 px-1.5 py-0.5 text-[10px] font-bold text-mist/70 sm:block sm:px-2 sm:text-xs">
         {keyDisplayName(specialKeys.sustain)}
       </span>
@@ -432,21 +444,15 @@ export default function PianoPage() {
 
   return (
     <div className="relative flex h-[100svh] flex-col overflow-hidden bg-ink text-mist">
-      {/* ===== 顶栏（窄屏自适应：分层隐藏，杜绝挤压） ===== */}
+      {/* ===== 顶栏（窄屏自适应） ===== */}
       <header ref={headerRef} className="z-20 flex flex-shrink-0 items-center gap-1.5 overflow-x-auto border-b border-white/10 bg-ink px-2 py-2 sm:gap-2 sm:px-3">
         <Link href="/" className="flex-shrink-0 rounded-full border border-white/15 px-2.5 py-1.5 text-xs text-dim transition-colors hover:border-cyan/50 hover:text-cyan sm:px-3 sm:text-sm">
           ← 返回
         </Link>
-
-        {/* 标题：中等宽度起显示完整 */}
         <h1 className="hidden flex-shrink-0 text-base font-black text-gradient sm:block">QeeYu 音琴</h1>
-
-        {/* 窄屏简化标题 */}
         <span className="flex-shrink-0 text-sm font-black text-gradient sm:hidden">音琴</span>
-
         <div className="flex-1" />
 
-        {/* 模式切换（窄屏紧凑） */}
         <div className="flex flex-shrink-0 overflow-hidden rounded-full border border-white/15">
           <button onClick={() => changeMode("score")}
             className={`px-2.5 py-1.5 text-xs transition-colors sm:px-4 sm:text-sm ${mode === "score" ? "bg-cyan/20 text-cyan" : "text-dim hover:text-mist"}`}>
@@ -458,7 +464,6 @@ export default function PianoPage() {
           </button>
         </div>
 
-        {/* 八度控制（紧凑版） */}
         <div className="flex flex-shrink-0 items-center gap-0.5 rounded-full border border-white/15 px-0.5 sm:gap-1 sm:px-1">
           <button onClick={() => changeOctave(Math.max(1, baseOctave - 1))}
             className="h-6 w-6 cursor-pointer rounded-full text-sm text-mist hover:bg-white/10 disabled:opacity-30 sm:h-7 sm:w-7 sm:text-base"
@@ -469,7 +474,6 @@ export default function PianoPage() {
             disabled={baseOctave >= 5}>＋</button>
         </div>
 
-        {/* 键数 + 音色（md 起显示） */}
         <span className="hidden flex-shrink-0 font-mono text-xs text-dim md:block">{keyCount}键</span>
         <span className="hidden flex-shrink-0 font-mono text-xs text-dim md:block xl:block">
           {TIMBRE_LIST.find((t) => t.id === timbre)?.name}
@@ -481,7 +485,7 @@ export default function PianoPage() {
         </button>
       </header>
 
-      {/* 音频激活提示（激活前的必要引导，激活后永久消失） */}
+      {/* 音频激活提示 */}
       {!audioReady && (
         <div onClick={async () => { try { await Tone.start(); setAudioReady(true); } catch {} }}
           className="z-20 flex cursor-pointer items-center justify-center gap-2 bg-cyan/10 py-2 text-sm text-cyan">
@@ -490,15 +494,31 @@ export default function PianoPage() {
         </div>
       )}
 
-      {/* ===== 悬浮通知（加载中 / 已就绪，fixed 定位不影响布局） ===== */}
-      {(loadingTimbre || timbreReady) && (
+            {/* ===== 悬浮通知（加载中 / 已就绪 / 失败，页面内 toast） ===== */}
+      {(loadingTimbre || timbreReady || timbreFailed) && (
         <div
           ref={notifyRef}
-          className={`pointer-events-none fixed left-1/2 top-16 z-[300] -translate-x-1/2 rounded-full border px-5 py-2 text-sm shadow-2xl backdrop-blur-md ${
-            loadingTimbre ? "border-neon/40 bg-ink-2/90" : "border-lime/40 bg-ink-2/90"
+          className={`fixed left-1/2 top-16 z-[300] -translate-x-1/2 rounded-2xl border px-5 py-2.5 text-sm shadow-2xl backdrop-blur-md ${
+            timbreFailed
+              ? "border-pink/50 bg-ink-2/95"
+              : loadingTimbre
+              ? "border-neon/40 bg-ink-2/90"
+              : "border-lime/40 bg-ink-2/90"
           }`}
         >
-          {loadingTimbre ? (
+          {timbreFailed ? (
+            // ★ 失败 toast：点击可重试
+            <button
+              onClick={() => { setTimbreFailed(null); void changeTimbre(timbre); }}
+              className="flex cursor-pointer items-center gap-3 text-pink"
+            >
+              <span className="h-2.5 w-2.5 rounded-full bg-pink" />
+              <span className="font-bold">{timbreFailed} 加载超时（CDN 响应慢）</span>
+              <span className="rounded-full bg-pink/20 px-3 py-1 text-xs font-bold text-pink transition-colors hover:bg-pink/40">
+                点击重试
+              </span>
+            </button>
+          ) : loadingTimbre ? (
             <span className="flex items-center gap-2 text-neon">
               <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-neon" />
               正在加载 {TIMBRE_LIST.find((t) => t.id === loadingTimbre)?.name} 采样...
@@ -512,7 +532,7 @@ export default function PianoPage() {
         </div>
       )}
 
-      {/* ===== 主区域（已验证的中心旋转方案 + 最终比例） ===== */}
+      {/* ===== 主区域（中心旋转 + 20/38/42） ===== */}
       <div className="relative min-h-0 flex-1">
         <div
           className="flex flex-col"
@@ -535,7 +555,7 @@ export default function PianoPage() {
                 }
           }
         >
-          {/* 琴谱带 20%（自由模式显示空格子，保持布局） */}
+          {/* 琴谱带 20% */}
           <div className="h-[20%] flex-shrink-0">
             <ScoreTrack
               notes={mode === "score" ? notes : []}
@@ -546,7 +566,7 @@ export default function PianoPage() {
             />
           </div>
 
-          {/* FFT 可视化 + 延音踏板 38% */}
+          {/* FFT + 踏板 38% */}
           <div className="flex h-[38%] flex-shrink-0 border-t border-white/5">
             <div className="min-h-0 min-w-0 flex-1">
               <FFTVisualizer />
