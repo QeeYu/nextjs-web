@@ -43,3 +43,4 @@ jobs:
 
             # 重启服务
             sudo systemctl restart nextjs
+            #test
