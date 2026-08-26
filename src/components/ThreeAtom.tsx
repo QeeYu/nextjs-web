@@ -1,7 +1,7 @@
 /**
- * 3D 分子/原子装饰组件
- * - 电子拖尾：流星效果（头部亮、尾部渐隐）
- * - 环不共面，每个环独立倾斜
+ * 3D 分子/原子装饰组件（修复类型错误版）
+ * 使用 @react-three/fiber 和 @react-three/drei
+ * 如果不需要，可以删除此文件并从 MainSection 中移除引用
  */
 "use client";
 
@@ -10,8 +10,40 @@ import { Canvas, useFrame } from "@react-three/fiber";
 import { OrbitControls, Sphere, Torus, Points, PointMaterial } from "@react-three/drei";
 import * as THREE from "three";
 
+// 类型定义
+interface NucleusProps {
+  color: string;
+  position: [number, number, number];
+  size?: number;
+  emissiveIntensity?: number;
+}
+
+interface OrbitRingProps {
+  radius: number;
+  color: string;
+  speed: number;
+  baseTilt: number;
+  offset?: number;
+}
+
+interface ElectronProps {
+  radius: number;
+  speed: number;
+  offset: number;
+  color: string;
+  trailLength?: number;
+}
+
+interface SatelliteProps {
+  radius: number;
+  speed: number;
+  offset: number;
+  color: string;
+  size?: number;
+}
+
 // 原子核
-function Nucleus({ color, position, size = 0.12, emissiveIntensity = 1.2 }) {
+function Nucleus({ color, position, size = 0.12, emissiveIntensity = 1.2 }: NucleusProps) {
   const meshRef = useRef<THREE.Mesh>(null);
   const scaleRef = useRef(1);
   useFrame((state) => {
@@ -41,8 +73,8 @@ function Nucleus({ color, position, size = 0.12, emissiveIntensity = 1.2 }) {
   );
 }
 
-// ★ 轨道环：不共面，独立倾斜随时间变化
-function OrbitRing({ radius, color, speed, baseTilt, offset = 0 }) {
+// 轨道环
+function OrbitRing({ radius, color, speed, baseTilt, offset = 0 }: OrbitRingProps) {
   const meshRef = useRef<THREE.Mesh>(null);
   const axisOffset = useRef(Math.random() * Math.PI * 2);
 
@@ -73,17 +105,16 @@ function OrbitRing({ radius, color, speed, baseTilt, offset = 0 }) {
   );
 }
 
-// ★ 电子：流星拖尾（头部亮、尾部渐隐、长尾巴）
-function Electron({ radius, speed, offset, color, trailLength = 60 }) {
+// ★ 电子：拖尾明显可见（使用 Points 和 BufferAttribute）
+function Electron({ radius, speed, offset, color, trailLength = 60 }: ElectronProps) {
   const meshRef = useRef<THREE.Mesh>(null);
   const trailRef = useRef<THREE.Points>(null);
   const positions = useRef(new Float32Array(trailLength * 3));
-  const colors = useRef(new Float32Array(trailLength * 4));
+  const colors = useRef(new Float32Array(trailLength * 4)); // RGBA
   const index = useRef(0);
   const initialized = useRef(false);
 
-  // 初始化所有点为起点
-  const initTrail = (x, y, z) => {
+  const initTrail = (x: number, y: number, z: number) => {
     const baseCol = new THREE.Color(color);
     for (let i = 0; i < trailLength; i++) {
       positions.current[i * 3] = x;
@@ -149,8 +180,18 @@ function Electron({ radius, speed, offset, color, trailLength = 60 }) {
       </Sphere>
       <Points ref={trailRef}>
         <bufferGeometry>
-          <bufferAttribute attach="attributes-position" count={trailLength} array={positions.current} itemSize={3} />
-          <bufferAttribute attach="attributes-color" count={trailLength} array={colors.current} itemSize={4} />
+          <bufferAttribute
+            attach="attributes-position"
+            count={trailLength}
+            array={positions.current}
+            itemSize={3}
+          />
+          <bufferAttribute
+            attach="attributes-color"
+            count={trailLength}
+            array={colors.current}
+            itemSize={4}
+          />
         </bufferGeometry>
         <PointMaterial
           size={0.15}
@@ -167,7 +208,7 @@ function Electron({ radius, speed, offset, color, trailLength = 60 }) {
 }
 
 // 小卫星
-function Satellite({ radius, speed, offset, color, size = 0.025 }) {
+function Satellite({ radius, speed, offset, color, size = 0.025 }: SatelliteProps) {
   const meshRef = useRef<THREE.Mesh>(null);
   useFrame((state) => {
     if (meshRef.current) {
@@ -215,9 +256,9 @@ function ParticleNebula() {
     if (pointsRef.current) {
       pointsRef.current.rotation.y = state.clock.getElapsedTime() * 0.004;
       pointsRef.current.rotation.x = Math.sin(state.clock.getElapsedTime() * 0.002) * 0.05;
-      const sizesAttr = pointsRef.current.geometry.attributes.size;
+      const sizesAttr = pointsRef.current.geometry.attributes.size as THREE.BufferAttribute;
       if (sizesAttr) {
-        const array = sizesAttr.array;
+        const array = sizesAttr.array as Float32Array;
         for (let i = 0; i < count; i++) {
           const pulse = 0.7 + 0.3 * Math.sin(state.clock.getElapsedTime() * 0.3 + phases[i]);
           array[i] = (0.01 + Math.random() * 0.03) * pulse;
@@ -230,9 +271,24 @@ function ParticleNebula() {
   return (
     <Points ref={pointsRef}>
       <bufferGeometry>
-        <bufferAttribute attach="attributes-position" count={count} array={positions} itemSize={3} />
-        <bufferAttribute attach="attributes-color" count={count} array={colors} itemSize={3} />
-        <bufferAttribute attach="attributes-size" count={count} array={sizes} itemSize={1} />
+        <bufferAttribute
+          attach="attributes-position"
+          count={count}
+          array={positions}
+          itemSize={3}
+        />
+        <bufferAttribute
+          attach="attributes-color"
+          count={count}
+          array={colors}
+          itemSize={3}
+        />
+        <bufferAttribute
+          attach="attributes-size"
+          count={count}
+          array={sizes}
+          itemSize={1}
+        />
       </bufferGeometry>
       <PointMaterial
         size={0.03}
@@ -303,7 +359,7 @@ export default function ThreeAtom() {
         />
       </Canvas>
 
-      
+     
     </div>
   );
 }
