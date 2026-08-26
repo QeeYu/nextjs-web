@@ -1,9 +1,5 @@
-/**
- * 主页主体部分（服务端组件）
- * - 交互背景 + 两页卡片 + 页脚
- * - 所有交互由各卡片自行实现（客户端组件）
- * - 使用 Reveal 实现滚动入场
- */
+// 主页：交互背景 + 两页卡片 + 页脚
+// 本组件是服务端组件（自身无交互），所有交互都由各卡片（客户端组件）自行实现
 import InteractiveBackground from "./InteractiveBackground";
 import Reveal from "./Reveal";
 import ProfileCard from "./cards/ProfileCard";
@@ -21,10 +17,10 @@ import {
   ColorPalette,
   ReactionTimer,
 } from "./cards/WidgetCards";
+import TimelineCard from "./cards/TimelineCard";
+import ThreeAtom from "./ThreeAtom";
 
-/**
- * 两页共用的页头
- */
+/** 两页共用的页头（含跳转到另一页的锚点按钮） */
 function PageHeader({
   index,
   zh,
@@ -45,9 +41,7 @@ function PageHeader({
           <p className="font-mono text-[11px] tracking-[0.5em] text-cyan">PAGE {index}</p>
           <h2 className="mt-2 text-3xl font-black md:text-4xl">
             {zh}
-            <span className="ml-3 align-middle text-base font-bold text-dim/70 md:text-lg">
-              {en}
-            </span>
+            <span className="ml-3 align-middle text-base font-bold text-dim/70 md:text-lg">{en}</span>
           </h2>
           <div className="mt-3 h-[3px] w-24 rounded-full bg-linear-to-r from-neon via-cyan to-pink" />
         </div>
@@ -83,6 +77,7 @@ export default function MainSection() {
             nextLabel="前往第 2 页"
           />
 
+          {/* ★ 卡片栅格：手机 1 列 / 平板 2 列 */}
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
             <Reveal>
               <ProfileCard />
@@ -95,6 +90,16 @@ export default function MainSection() {
             </Reveal>
             <Reveal delay={150}>
               <LanguageRingCard />
+            </Reveal>
+            {/* ★ 新增：时间线卡片（化工→全栈） */}
+            <Reveal delay={180}>
+              <TimelineCard />
+            </Reveal>
+            {/* ★ 新增：3D 分子/原子（化工主题装饰） */}
+            <Reveal delay={200}>
+              <div className="card-glass card-line relative h-full min-h-[300px] overflow-hidden p-0">
+                <ThreeAtom />
+              </div>
             </Reveal>
           </div>
         </section>

@@ -1,9 +1,8 @@
 /* ============================================================
    全局样式：Tailwind v4 + 主题变量 + 通用组件类 + 动画关键帧
-   优化：合并重复的 @keyframes 定义，移除冗余代码
    ============================================================ */
 
-/* ===== 引入 Tailwind v4（CSS 优先配置） ===== */
+/* ===== 引入 Tailwind v4 ===== */
 @import "tailwindcss";
 
 /* ===== 主题变量 ===== */
@@ -87,12 +86,12 @@ body {
   will-change: transform;
 }
 
-/* 首屏字母初始隐藏（由 anime.js 弹入） */
+/* 首屏字母初始隐藏 */
 .hero-letter {
   opacity: 0;
 }
 
-/* 语言星环：悬停时暂停旋转 */
+/* 语言星环：悬停暂停 */
 .ring-zone:hover .ring-rot,
 .ring-zone:hover .ring-label-rot {
   animation-play-state: paused;
@@ -104,9 +103,7 @@ body {
   animation: spinRev360 50s linear infinite;
 }
 
-/* ===== 关键帧动画（合并重复定义） ===== */
-
-/* 向下箭头 / 元素的灵动弹跳 */
+/* ===== 关键帧动画 ===== */
 @keyframes floatY {
   0%,
   100% {
@@ -120,7 +117,6 @@ body {
   animation: floatY 1.8s ease-in-out infinite;
 }
 
-/* 旋转一周（环形语言图 / 装饰方块） */
 @keyframes spin360 {
   to {
     transform: rotate(360deg);
@@ -135,7 +131,6 @@ body {
   animation: spin360 16s linear infinite;
 }
 
-/* 装饰图形的漂浮漂移 */
 @keyframes blobDrift {
   0%,
   100% {
@@ -152,7 +147,6 @@ body {
   animation: blobDrift 7s ease-in-out infinite;
 }
 
-/* 时间数字的呼吸辉光 */
 @keyframes glowPulse {
   0%,
   100% {
@@ -364,4 +358,31 @@ body {
   .anim-spin-fast {
     animation: none !important;
   }
+}
+/* ===== Journey 新增动画 ===== */
+
+/* 闪烁（已有，可保留） */
+@keyframes twinkle {
+  0%, 100% { opacity: 0.15; transform: scale(0.7); }
+  50% { opacity: 1; transform: scale(1.5); }
+}
+.anim-twinkle {
+  animation: twinkle 2.5s ease-in-out infinite;
+}
+
+/* 呼吸浮动（已有 .anim-float，可复用） */
+/* .anim-float 已存在，无需重复添加 */
+/* ===== Journey 新增动画 ===== */
+@keyframes twinkle {
+  0%, 100% { opacity: 0.15; transform: scale(0.7); }
+  50% { opacity: 1; transform: scale(1.5); }
+}
+.anim-twinkle {
+  animation: twinkle 2.5s ease-in-out infinite;
+}
+@keyframes spin360 {
+  to { transform: rotate(360deg); }
+}
+.anim-spin-slow {
+  animation: spin360 16s linear infinite;
 }

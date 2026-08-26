@@ -1,11 +1,8 @@
-/**
- * 全站静态数据：改文案 / 链接 / 数据，只需要改这一个文件
- * 所有卡片和页面内容集中管理
- */
+// ====================================================================
+// 全站静态数据：改文案 / 链接 / 数据，只需要改这一个文件
+// ====================================================================
 
-// ============================================================
-// 个人信息
-// ============================================================
+// —— 个人信息 ——
 export const profile = {
   name: "QeeYu",
   avatar: "/avatar.jpg",
@@ -19,9 +16,7 @@ export const profile = {
     "都是系统工程的艺术。",
 };
 
-// ============================================================
-// 链接项
-// ============================================================
+// —— 链接项 ——
 export interface LinkItem {
   label: string;
   icon: string;
@@ -29,7 +24,6 @@ export interface LinkItem {
   href?: string;
   value?: string;
 }
-
 export const links: LinkItem[] = [
   { label: "GitHub", icon: "🐙", action: "open", href: "https://github.com/QeeYu" },
   { label: "QQ", icon: "🐧", action: "copy", value: "3094554686" },
@@ -42,9 +36,7 @@ export const links: LinkItem[] = [
   { label: "Email", icon: "📮", action: "open", href: "mailto:3094554686@qq.com" },
 ];
 
-// ============================================================
-// 项目语言（环形图数据，pct 总和必须 = 100）
-// ============================================================
+// —— 项目语言（环形图数据） ——
 export interface LangItem {
   name: string;
   pct: number;
@@ -52,7 +44,6 @@ export interface LangItem {
   url: string;
   note: string;
 }
-
 export const languages: LangItem[] = [
   {
     name: "TypeScript",
@@ -91,10 +82,9 @@ export const languages: LangItem[] = [
   },
 ];
 
-// ============================================================
-// 技能（点击进入官方文档）
-// ============================================================
+// —— 技能（含硬技能 + 软技能） ——
 export const skills = [
+  // 硬技能
   { name: "React 19", level: 15, icon: "⚛️", url: "https://react.dev" },
   { name: "Next.js 16", level: 20, icon: "▲", url: "https://nextjs.org" },
   { name: "Tailwind 4", level: 10, icon: "🌊", url: "https://tailwindcss.com" },
@@ -102,11 +92,13 @@ export const skills = [
   { name: "GSAP", level: 10, icon: "🟢", url: "https://gsap.com" },
   { name: "anime.js", level: 10, icon: "🎬", url: "https://animejs.com" },
   { name: "Node.js", level: 30, icon: "🟩", url: "https://nodejs.org" },
+  // ★ 软技能（化工背景赋予）
+  { name: "系统工程思维", level: 40, icon: "⚙️", url: "#" },
+  { name: "数据驱动决策", level: 35, icon: "📊", url: "#" },
+  { name: "跨学科学习力", level: 45, icon: "🧠", url: "#" },
 ];
 
-// ============================================================
-// 相册
-// ============================================================
+// —— 相册 ——
 export const album = [
   {
     title: "自创AI角色海报",
@@ -146,9 +138,7 @@ export const album = [
   },
 ];
 
-// ============================================================
-// 日记
-// ============================================================
+// —— 日记 ——
 export const diary = [
   {
     date: "2026-08-23",
@@ -176,9 +166,7 @@ export const diary = [
   },
 ];
 
-// ============================================================
-// 一言（本地语料）
-// ============================================================
+// —— 一言 ——
 export const hitokoto = [
   "代码如诗，bug 如标点。",
   "今天的动画，比昨天多丝滑 1%。",
@@ -192,15 +180,12 @@ export const hitokoto = [
   "慢慢来，比较快。",
 ];
 
-// ============================================================
-// 旅程面板数据
-// ============================================================
+// —— Journey 面板数据（新增化工背景面板） ——
 export interface JourneyStat {
   value: number;
   suffix: string;
   label: string;
 }
-
 export interface JourneyPanel {
   chapter: string;
   titleBefore: string;
@@ -214,11 +199,24 @@ export interface JourneyPanel {
 
 export const journeyPanels: JourneyPanel[] = [
   {
+    chapter: "CHAPTER 00 · 起点",
+    titleBefore: "化工学士 → ",
+    titleHighlight: "全栈开发者",
+    titleAfter: " 🧪",
+    text: "用化工的严谨，写干净的代码。\n从物料衡算到状态管理，\n从反应器设计到系统架构，\n跨界，是我最强的竞争力。",
+    accent: "text-cyan",
+    stats: [
+      { value: 4, suffix: " 年", label: "化工学习" },
+      { value: 1.5, suffix: " 年", label: "全栈自学" },
+      { value: 20, suffix: " +", label: "个人项目" },
+    ],
+  },
+  {
     chapter: "CHAPTER 01",
     titleBefore: "一切，",
     titleHighlight: "从这里开始",
     titleAfter: "",
-    text: "欢迎来到 QeeYu 的个人主页。",
+    text: "欢迎来到 QeeYu 的个人主页。\n这里记录了一个化工学生的编程成长之路。",
     accent: "text-cyan",
   },
   {
@@ -266,4 +264,18 @@ export const journeyPanels: JourneyPanel[] = [
     text: "开场动画到此结束，\n故事才刚刚开始 —— 继续下滑，去认识一个更完整的 QeeYu。",
     accent: "text-pink",
   },
+];
+
+// —— 时间线数据（用于 TimelineCard） ——
+export interface TimelineItem {
+  date: string;
+  title: string;
+  desc: string;
+  icon?: string;
+}
+export const timeline: TimelineItem[] = [
+  { date: "2023", title: "化工专业在读", desc: "学习化工原理、反应工程、流程优化", icon: "🧪" },
+  { date: "2024", title: "自学编程", desc: "从 HTML/CSS 到 JavaScript/React", icon: "💻" },
+  { date: "2025", title: "全栈入门", desc: "Next.js + TypeScript + Tailwind", icon: "🚀" },
+  { date: "2026", title: "个人主页上线", desc: "首个完整的全栈作品", icon: "🎉" },
 ];

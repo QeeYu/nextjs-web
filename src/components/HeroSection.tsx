@@ -10,6 +10,7 @@ import { useEffect, useRef } from "react";
 import gsap from "gsap";
 import anime from "@/lib/anime";
 import ParticleBackground from "./ParticleBackground";
+import ThemeToggle from "./ThemeToggle";
 
 export default function HeroSection() {
   const rootRef = useRef<HTMLElement>(null);
@@ -153,7 +154,7 @@ export default function HeroSection() {
       </div>
 
       <div className="absolute bottom-4 right-5 z-10 font-mono text-[10px] text-dim/50">
-        QEEYU.DEV-2026
+        <span>QEEYU.DEV-2026</span>
       </div>
     </section>
   );
