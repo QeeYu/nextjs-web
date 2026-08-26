@@ -1,7 +1,5 @@
 /**
  * 3D 分子/原子装饰组件（修复类型错误版）
- * 使用 @react-three/fiber 和 @react-three/drei
- * 如果不需要，可以删除此文件并从 MainSection 中移除引用
  */
 "use client";
 
@@ -180,18 +178,8 @@ function Electron({ radius, speed, offset, color, trailLength = 60 }: ElectronPr
       </Sphere>
       <Points ref={trailRef}>
         <bufferGeometry>
-          <bufferAttribute
-            attach="attributes-position"
-            count={trailLength}
-            array={positions.current}
-            itemSize={3}
-          />
-          <bufferAttribute
-            attach="attributes-color"
-            count={trailLength}
-            array={colors.current}
-            itemSize={4}
-          />
+          <bufferAttribute attach="attributes-position" args={[positions.current, 3]} />
+          <bufferAttribute attach="attributes-color" args={[colors.current, 4]} />
         </bufferGeometry>
         <PointMaterial
           size={0.15}
@@ -271,24 +259,9 @@ function ParticleNebula() {
   return (
     <Points ref={pointsRef}>
       <bufferGeometry>
-        <bufferAttribute
-          attach="attributes-position"
-          count={count}
-          array={positions}
-          itemSize={3}
-        />
-        <bufferAttribute
-          attach="attributes-color"
-          count={count}
-          array={colors}
-          itemSize={3}
-        />
-        <bufferAttribute
-          attach="attributes-size"
-          count={count}
-          array={sizes}
-          itemSize={1}
-        />
+        <bufferAttribute attach="attributes-position" args={[positions, 3]} />
+        <bufferAttribute attach="attributes-color" args={[colors, 3]} />
+        <bufferAttribute attach="attributes-size" args={[sizes, 1]} />
       </bufferGeometry>
       <PointMaterial
         size={0.03}
@@ -359,7 +332,7 @@ export default function ThreeAtom() {
         />
       </Canvas>
 
-     
+      
     </div>
   );
 }
