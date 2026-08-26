@@ -1,11 +1,7 @@
-/**
- * PWA manifest 配置
- * - 支持添加到主屏幕
- * - 静态导出模式下必须声明 dynamic = "force-static"
- */
+// src/app/manifest.ts
 import type { MetadataRoute } from "next";
 
-export const dynamic = "force-static"; // ★ 修复 static export 错误
+export const dynamic = "force-static"; // ★ 添加这一行
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
@@ -16,12 +12,6 @@ export default function manifest(): MetadataRoute.Manifest {
     display: "standalone",
     background_color: "#05060e",
     theme_color: "#05060e",
-    icons: [
-      {
-        src: "/favicon.ico",
-        sizes: "any",
-        type: "image/x-icon",
-      },
-    ],
+    icons: [{ src: "/favicon.ico", sizes: "any", type: "image/x-icon" }],
   };
 }
