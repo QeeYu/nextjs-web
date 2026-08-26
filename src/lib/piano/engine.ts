@@ -1,12 +1,9 @@
-// ====================================================================
-// 音频引擎 v14：
-// - ★ 超时后清除 loadPromises 记录 → 允许重新点击重试
-// - onload 回调驱动（可靠发请求）
-// - 每音色独立 sampler（Map 管理）
-// - 状态机：idle / loading / ready / timeout
-// - 过渡期 play 降级到已就绪音色
-// ====================================================================
-
+/**
+ * 音琴音频引擎 v14（全量加载）
+ * - 加载完整采样（不按需过滤）
+ * - 状态机：idle / loading / ready / timeout
+ * - 超时后清除记录，允许重新点击重试
+ */
 import * as Tone from "tone";
 import { TIMBRE_LIST } from "./constants";
 
@@ -20,22 +17,17 @@ class PianoEngine {
   private started = false;
   private loadPromises = new Map<string, Promise<void>>();
   private _analyser: Tone.Analyser | null = null;
-
   private loadStates = new Map<string, LoadState>();
-
   private sustainOn = false;
   private sustainedNotes = new Set<string>();
 
-  /** 查询音色加载状态 */
   getTimbreState(timbreId: string): LoadState {
     if (this.samplers.has(timbreId)) return "ready";
     return this.loadStates.get(timbreId) ?? "idle";
   }
 
-  /** 确保 AudioContext 启动 */
   private async ensure(): Promise<boolean> {
     if (typeof window === "undefined") return false;
-
     if (!this.started) {
       try {
         await Tone.start();
@@ -45,16 +37,16 @@ class PianoEngine {
       }
     }
     if (Tone.getContext().state !== "running") {
-      try { await Tone.getContext().resume(); } catch {}
+      try {
+        await Tone.getContext().resume();
+      } catch {}
     }
-
     if (!this.volumeNode) {
       this.volumeNode = new Tone.Volume(this._volume * 24 - 24).toDestination();
     }
     return true;
   }
 
-  /** FFT 分析器 */
   getAnalyser(): Tone.Analyser | null {
     if (!this._analyser && this.volumeNode) {
       this._analyser = new Tone.Analyser("fft", 256);
@@ -69,25 +61,23 @@ class PianoEngine {
     return analyser.getValue() as Float32Array;
   }
 
-  /** 加载音色（★ 超时清记录，可重试） */
+  /**
+   * 加载音色（全量加载）
+   */
   private async loadTimbre(timbreId: string): Promise<void> {
     const existing = this.loadPromises.get(timbreId);
     if (existing) return existing;
     if (this.samplers.has(timbreId)) return;
 
-    if (!TIMBRE_LIST || !Array.isArray(TIMBRE_LIST)) {
-      console.error("[engine] ❌ TIMBRE_LIST 导入异常");
-      return;
-    }
     const info = TIMBRE_LIST.find((t) => t.id === timbreId);
     if (!info) {
-      console.error("[engine] ❌ 找不到音色:", timbreId);
+      console.error(`[engine] ❌ 找不到音色: ${timbreId}`);
       this.loadStates.set(timbreId, "timeout");
       return;
     }
 
     this.loadStates.set(timbreId, "loading");
-    console.log(`[engine] 开始加载 ${timbreId} | ${info.baseUrl} | ${Object.keys(info.sampleUrls).length} 个采样`);
+    console.log(`[engine] 开始加载 ${timbreId}（全量）`);
 
     const loadPromise = new Promise<void>((resolve) => {
       const urls: Record<string, string> = {};
@@ -100,16 +90,14 @@ class PianoEngine {
         if (settled) return;
         settled = true;
         this.loadStates.set(timbreId, state);
-        // ★ 关键：超时/失败时清除记录 → 允许下次重新加载
         if (state === "timeout") {
           this.loadPromises.delete(timbreId);
         }
         resolve();
       };
 
-      // 45s 超时兜底（清除记录，可重试）
       const timeout = setTimeout(() => {
-        console.warn(`[engine] ⏰ ${timbreId} 45s 超时（可重试）`);
+        console.warn(`[engine] ⏰ ${timbreId} 45s 超时`);
         finish("timeout");
       }, 45000);
 
@@ -119,11 +107,18 @@ class PianoEngine {
         onload: () => {
           clearTimeout(timeout);
           if (this.volumeNode) {
-            try { sampler.connect(this.volumeNode); } catch {}
+            try {
+              sampler.connect(this.volumeNode);
+            } catch {}
           }
           this.samplers.set(timbreId, sampler);
-          console.log(`[engine] ✓ ${timbreId} 就绪`);
+          console.log(`[engine] ✓ ${timbreId} 就绪（${Object.keys(urls).length} 个采样）`);
           finish("ready");
+        },
+        onerror: (err) => {
+          clearTimeout(timeout);
+          console.error(`[engine] ❌ ${timbreId} 加载失败:`, err);
+          finish("timeout");
         },
       });
     });
@@ -132,7 +127,9 @@ class PianoEngine {
     return loadPromise;
   }
 
-  /** 切换音色（无条件发起加载） */
+  /**
+   * 切换音色
+   */
   async setTimbre(timbreId: string): Promise<void> {
     this.currentTimbre = timbreId;
     this.sustainedNotes.clear();
@@ -142,13 +139,14 @@ class PianoEngine {
     }
   }
 
-  /** 延音踏板 */
   setSustain(on: boolean) {
     this.sustainOn = on;
     if (!on) {
       this.sustainedNotes.forEach((note) => {
         this.samplers.forEach((s) => {
-          try { s.triggerRelease(note); } catch {}
+          try {
+            s.triggerRelease(note);
+          } catch {}
         });
       });
       this.sustainedNotes.clear();
@@ -159,13 +157,13 @@ class PianoEngine {
     return this.sustainOn;
   }
 
-  /** 播放（过渡期降级） */
   async play(freq: number) {
     if (!(await this.ensure())) return;
-
     if (this.volumeNode) {
       this.samplers.forEach((s) => {
-        try { s.connect(this.volumeNode!); } catch {}
+        try {
+          s.connect(this.volumeNode!);
+        } catch {}
       });
     }
 

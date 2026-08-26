@@ -1,5 +1,10 @@
+/**
+ * 音琴页面（Server Component）
+ * - 导出 metadata（SEO）
+ * - 渲染 Client Component 包装器
+ */
 import type { Metadata } from "next";
-import PianoPage from "@/components/piano/PianoPage";
+import PianoClient from "./PianoClient";
 
 export const metadata: Metadata = {
   title: "音琴 · QeeYu",
@@ -7,5 +12,5 @@ export const metadata: Metadata = {
 };
 
 export default function Piano() {
-  return <PianoPage />;
+  return <PianoClient />;
 }

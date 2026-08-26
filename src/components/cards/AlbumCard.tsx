@@ -1,3 +1,8 @@
+/**
+ * 相册卡片（瀑布流布局 + 灯箱）
+ * - 缩略图保持原始宽高比
+ * - 点击弹出全屏灯箱，支持键盘 ← → / Esc
+ */
 "use client";
 
 import { useEffect, useRef, useState } from "react";
@@ -6,29 +11,43 @@ import Image from "next/image";
 import { album } from "@/data/content";
 import TiltCard from "../TiltCard";
 
-/** 缩略图：按真实比例自动排布 */
-function Thumbnail({ photo, onOpen }: {
+/** 缩略图组件 */
+function Thumbnail({
+  photo,
+  onOpen,
+}: {
   photo: { title: string; emoji: string; grad: string; src?: string };
   onOpen: () => void;
 }) {
   const [aspect, setAspect] = useState("1 / 1");
+
   return (
-    <button onClick={onOpen}
+    <button
+      onClick={onOpen}
       className="group relative mb-2.5 block w-full cursor-pointer overflow-hidden rounded-xl border border-white/10 break-inside-avoid"
-      style={{ aspectRatio: aspect, background: photo.grad }}>
+      style={{ aspectRatio: aspect, background: photo.grad }}
+    >
       {photo.src ? (
-        <Image src={photo.src} alt={photo.title} fill unoptimized
+        <Image
+          src={photo.src}
+          alt={photo.title}
+          fill
+          unoptimized
           sizes="(max-width: 640px) 50vw, 25vw"
           onLoad={(e) => {
             const img = e.currentTarget;
-            if (img.naturalWidth && img.naturalHeight)
+            if (img.naturalWidth && img.naturalHeight) {
               setAspect(`${img.naturalWidth} / ${img.naturalHeight}`);
+            }
           }}
-          className="object-cover transition-transform duration-500 group-hover:scale-110" />
+          className="object-cover transition-transform duration-500 group-hover:scale-110"
+        />
       ) : (
         <span className="absolute inset-0 flex items-center justify-center text-3xl">{photo.emoji}</span>
       )}
-      <span className="absolute inset-x-0 bottom-0 translate-y-full truncate bg-black/55 px-1.5 py-1 text-[10px] text-mist backdrop-blur-sm transition-transform duration-300 group-hover:translate-y-0">{photo.title}</span>
+      <span className="absolute inset-x-0 bottom-0 translate-y-full truncate bg-black/55 px-1.5 py-1 text-[10px] text-mist backdrop-blur-sm transition-transform duration-300 group-hover:translate-y-0">
+        {photo.title}
+      </span>
     </button>
   );
 }
@@ -39,7 +58,10 @@ export default function AlbumCard() {
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const openBox = (i: number) => {
-    if (closeTimer.current) { clearTimeout(closeTimer.current); closeTimer.current = null; }
+    if (closeTimer.current) {
+      clearTimeout(closeTimer.current);
+      closeTimer.current = null;
+    }
     setLightbox(i);
     requestAnimationFrame(() => requestAnimationFrame(() => setShow(true)));
   };
@@ -50,13 +72,11 @@ export default function AlbumCard() {
     closeTimer.current = setTimeout(() => setLightbox(null), 200);
   };
 
-  // ★ 切换：-1 上一张 / +1 下一张（循环）
   const switchPhoto = (dir: number) => {
     if (lightbox === null) return;
     setLightbox((lightbox + dir + album.length) % album.length);
   };
 
-  // 键盘：Esc 关闭 / ← 上一张 / → 下一张
   useEffect(() => {
     if (lightbox === null) return;
     const onKey = (e: KeyboardEvent) => {
@@ -83,72 +103,84 @@ export default function AlbumCard() {
         <p className="mt-4 text-center text-[11px] text-dim/60">📸 记录下的瞬间</p>
       </TiltCard>
 
-      {/* ★ 灯箱：全屏 + 左右切换按钮 + 键盘 ← → */}
-      {lightbox !== null && typeof document !== "undefined" && createPortal(
-        <div
-          onClick={closeBox}
-          className={`fixed inset-0 z-[200] bg-black/95 p-8 transition-opacity duration-200 ${show ? "opacity-100" : "opacity-0"}`}
-        >
-          {/* 图片区（点击关闭） */}
-          <div className="relative h-full w-full">
-            {album[lightbox].src ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={album[lightbox].src} alt={album[lightbox].title}
-                className="absolute inset-0 h-full w-full object-contain" />
-            ) : (
-              <span className="absolute inset-0 flex items-center justify-center text-8xl">{album[lightbox].emoji}</span>
+      {/* 灯箱 Portal */}
+      {lightbox !== null &&
+        typeof document !== "undefined" &&
+        createPortal(
+          <div
+            onClick={closeBox}
+            className={`fixed inset-0 z-[200] bg-black/95 p-8 transition-opacity duration-200 ${
+              show ? "opacity-100" : "opacity-0"
+            }`}
+          >
+            <div className="relative h-full w-full">
+              {album[lightbox].src ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={album[lightbox].src}
+                  alt={album[lightbox].title}
+                  className="absolute inset-0 h-full w-full object-contain"
+                />
+              ) : (
+                <span className="absolute inset-0 flex items-center justify-center text-8xl">
+                  {album[lightbox].emoji}
+                </span>
+              )}
+            </div>
+
+            {album.length > 1 && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  switchPhoto(-1);
+                }}
+                aria-label="上一张"
+                className="absolute left-6 top-1/2 flex h-14 w-14 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full bg-white/10 text-white transition-all hover:scale-110 hover:bg-neon/60 active:scale-95"
+              >
+                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden>
+                  <path d="M15 5l-7 7 7 7" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
             )}
-          </div>
 
-          {/* ★ 左切换按钮（SVG 箭头，几何居中不歪） */}
-          {album.length > 1 && (
+            {album.length > 1 && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  switchPhoto(1);
+                }}
+                aria-label="下一张"
+                className="absolute right-6 top-1/2 flex h-14 w-14 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full bg-white/10 text-white transition-all hover:scale-110 hover:bg-neon/60 active:scale-95"
+              >
+                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden>
+                  <path d="M9 5l7 7-7 7" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
+            )}
+
+            <p className="pointer-events-none absolute bottom-6 left-1/2 -translate-x-1/2 text-lg font-black text-white drop-shadow-md">
+              {album[lightbox].title}
+            </p>
+
             <button
-              onClick={(e) => { e.stopPropagation(); switchPhoto(-1); }}
-              aria-label="上一张"
-              className="absolute left-6 top-1/2 flex h-14 w-14 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full bg-white/10 text-white transition-all hover:scale-110 hover:bg-neon/60 active:scale-95"
+              onClick={closeBox}
+              aria-label="关闭"
+              className="absolute right-6 top-6 flex h-10 w-10 cursor-pointer items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-pink/80"
             >
-              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden>
-                <path d="M15 5l-7 7 7 7" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
+                <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
               </svg>
             </button>
-          )}
 
-          {/* ★ 右切换按钮（SVG 箭头，几何居中不歪） */}
-          {album.length > 1 && (
-            <button
-              onClick={(e) => { e.stopPropagation(); switchPhoto(1); }}
-              aria-label="下一张"
-              className="absolute right-6 top-1/2 flex h-14 w-14 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full bg-white/10 text-white transition-all hover:scale-110 hover:bg-neon/60 active:scale-95"
-            >
-              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden>
-                <path d="M9 5l7 7-7 7" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </button>
-          )}
-
-          {/* 标题（底部居中） */}
-          <p className="pointer-events-none absolute bottom-6 left-1/2 -translate-x-1/2 text-lg font-black text-white drop-shadow-md">
-            {album[lightbox].title}
-          </p>
-
-          {/* 关闭按钮（SVG，居中不歪） */}
-          <button onClick={closeBox} aria-label="关闭"
-            className="absolute right-6 top-6 flex h-10 w-10 cursor-pointer items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-pink/80">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
-              <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
-            </svg>
-          </button>
-
-          {/* 索引（右下角）+ 键盘提示 */}
-          <p className="pointer-events-none absolute bottom-6 right-6 rounded bg-black/40 px-2 py-0.5 font-mono text-xs text-white/80">
-            {lightbox + 1} / {album.length}
-          </p>
-          <p className="pointer-events-none absolute bottom-6 left-6 hidden font-mono text-[10px] text-white/40 md:block">
-            ← → 切换 · Esc 关闭
-          </p>
-        </div>,
-        document.body
-      )}
+            <p className="pointer-events-none absolute bottom-6 right-6 rounded bg-black/40 px-2 py-0.5 font-mono text-xs text-white/80">
+              {lightbox + 1} / {album.length}
+            </p>
+            <p className="pointer-events-none absolute bottom-6 left-6 hidden font-mono text-[10px] text-white/40 md:block">
+              ← → 切换 · Esc 关闭
+            </p>
+          </div>,
+          document.body
+        )}
     </>
   );
 }
