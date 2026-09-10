@@ -9,7 +9,6 @@
 
 import { useEffect, useRef, useState } from "react";
 import anime from "@/lib/anime";
-import { hitokoto } from "@/data/content";
 import TiltCard from "../TiltCard";
 import Link from "next/link";
 
@@ -26,8 +25,7 @@ const hslToHex = (h: number, s: number, l: number) => {
   return `#${f(0)}${f(8)}${f(4)}`;
 };
 
-
-// ---- 2. 迷你音琴 ----
+// ---- 1. 迷你音琴 ----
 const FREQS = [523.25, 587.33, 659.25, 698.46, 783.99, 880.0, 987.77, 1046.5];
 const KEY_LABELS = ["哆", "瑞", "咪", "发", "嗦", "拉", "西", "哆"];
 
@@ -36,7 +34,9 @@ export function PianoCard() {
 
   const play = (freq: number, el?: HTMLElement) => {
     if (!ctxRef.current) {
-      const AC = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+      const AC =
+        window.AudioContext ||
+        (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
       ctxRef.current = new AC();
     }
     const ctx = ctxRef.current;
@@ -93,39 +93,14 @@ export function PianoCard() {
   );
 }
 
-// ---- 4. 掷骰子 ----
+// ---- 2. 掷骰子 ----
 const DOT_POS: Record<number, [number, number][]> = {
   1: [[1, 1]],
-  2: [
-    [0, 0],
-    [2, 2],
-  ],
-  3: [
-    [0, 0],
-    [1, 1],
-    [2, 2],
-  ],
-  4: [
-    [0, 0],
-    [0, 2],
-    [2, 0],
-    [2, 2],
-  ],
-  5: [
-    [0, 0],
-    [0, 2],
-    [1, 1],
-    [2, 0],
-    [2, 2],
-  ],
-  6: [
-    [0, 0],
-    [0, 1],
-    [0, 2],
-    [2, 0],
-    [2, 1],
-    [2, 2],
-  ],
+  2: [[0, 0], [2, 2]],
+  3: [[0, 0], [1, 1], [2, 2]],
+  4: [[0, 0], [0, 2], [2, 0], [2, 2]],
+  5: [[0, 0], [0, 2], [1, 1], [2, 0], [2, 2]],
+  6: [[0, 0], [0, 1], [0, 2], [2, 0], [2, 1], [2, 2]],
 };
 
 export function DiceRoller() {
@@ -281,7 +256,7 @@ export function DiceRoller() {
   );
 }
 
-// ---- 5. 配色卡 ----
+// ---- 3. 配色卡 ----
 export function ColorPalette() {
   const [colors, setColors] = useState<string[]>([]);
   const [copied, setCopied] = useState<number | null>(null);
@@ -360,7 +335,7 @@ export function ColorPalette() {
   );
 }
 
-// ---- 6. 反应测试 ----
+// ---- 4. 反应测试 ----
 export function ReactionTimer() {
   const [state, setState] = useState<"idle" | "waiting" | "ready" | "result">("idle");
   const [time, setTime] = useState(0);
