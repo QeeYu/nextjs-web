@@ -1,15 +1,31 @@
 // 主页：交互背景 + 两页卡片 + 页脚
+import dynamic from "next/dynamic";
 import InteractiveBackground from "./InteractiveBackground";
 import Reveal from "./Reveal";
 import ProfileCard from "./cards/ProfileCard";
 import TimeCard from "./cards/TimeCard";
 import LinksCard from "./cards/LinksCard";
-import LanguageRingCard from "./cards/LanguageRingCard";
 import SkillsCard from "./cards/SkillsCard";
+import LanguageRingCard from "./cards/LanguageRingCard";
 import ExperienceCard from "./cards/ExperienceCard";
 import WorksCard from "./cards/WorksCard";
 import { PianoCard, DiceRoller, ColorPalette, ReactionTimer } from "./cards/WidgetCards";
-import ThreeAtom from "./ThreeAtom";
+
+// ★ 关键优化：ThreeAtom 独立动态加载（Three.js 500+ KB 不跟 MainSection 一起下）
+const ThreeAtom = dynamic(() => import("./ThreeAtom"), {
+  ssr: false,
+  loading: () => (
+    <div className="flex h-full w-full items-center justify-center bg-ink-2/30">
+      <div className="flex flex-col items-center gap-3">
+        <span className="h-6 w-6 animate-spin rounded-full border-2 border-cyan/30 border-t-cyan" />
+        <span className="font-mono text-[10px] tracking-widest text-dim">
+          LOADING 3D...
+        </span>
+      </div>
+    </div>
+  ),
+});
+
 /** 两页共用的页头 */
 function PageHeader({
   index,
@@ -53,10 +69,8 @@ function PageHeader({
 export default function MainSection() {
   return (
     <div id="main" className="relative">
-      {/* 交互背景 */}
       <InteractiveBackground />
 
-      {/* 内容层 */}
       <div className="relative z-10 -mt-[100svh]">
         {/* ============ 第一页：关于我 ============ */}
         <section
@@ -81,15 +95,13 @@ export default function MainSection() {
             <Reveal delay={60}>
               <LinksCard />
             </Reveal>
-            {/* ★ 技能卡片：放在语言卡之前 */}
             <Reveal delay={150}>
               <SkillsCard />
             </Reveal>
-            {/* ★ 语言卡：挪到技能卡之后 */}
             <Reveal delay={180}>
               <LanguageRingCard />
             </Reveal>
-            {/* 3D 分子装饰 */}
+            {/* 3D 分子装饰（动态加载，有骨架屏） */}
             <Reveal delay={200}>
               <div className="card-glass card-line relative h-full min-h-[300px] overflow-hidden p-0">
                 <ThreeAtom />
@@ -104,25 +116,27 @@ export default function MainSection() {
           <span className="anim-float text-cyan">▼</span>
         </div>
 
-        {/* ============ 第二页：作品 · 趣味 ============ */}
-        <section id="main-page-2" className="mx-auto max-w-6xl px-4 pb-16 md:px-8">
+        {/* ============ 第二页：经历 · 作品 · 趣味 ============ */}
+        <section
+          id="main-page-2"
+          className="mx-auto max-w-6xl px-4 pb-16 md:px-8"
+        >
           <PageHeader
             index="02"
-            zh="作品 · 趣味"
-            en="WORKS / FUN ZONE"
+            zh="经历 · 作品 · 趣味"
+            en="EXPERIENCE / WORKS / FUN ZONE"
             nextId="#hero"
             nextLabel="回到顶部"
           />
+
           <Reveal>
             <ExperienceCard />
           </Reveal>
 
-          {/* 作品集：全宽 */}
           <Reveal delay={90} className="mt-8 md:mt-10">
             <WorksCard />
           </Reveal>
 
-          {/* 趣味小插件区 */}
           <div className="mt-14">
             <Reveal>
               <div className="mb-6 flex items-center gap-3">
@@ -136,7 +150,6 @@ export default function MainSection() {
               </div>
             </Reveal>
 
-            {/* 大屏 4 列，更紧凑 */}
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-4">
               <Reveal>
                 <PianoCard />
@@ -154,10 +167,9 @@ export default function MainSection() {
           </div>
         </section>
 
-        {/* 页脚 */}
         <footer className="border-t border-white/10 px-4 py-10 text-center">
           <p className="font-mono text-xs tracking-[0.3em] text-dim">
-            KUANG · PERSONAL HOMEPAGE · 2026
+            QEEYU · PERSONAL HOMEPAGE · 2026
           </p>
           <p className="mt-2 text-[11px] text-dim/70">
             Built with Next.js 16 · React 19 · Tailwind CSS 4 · GSAP · anime.js · Canvas

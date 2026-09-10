@@ -1,24 +1,44 @@
 /**
- * 首页（客户端组件）
- * - HeroSection: 首屏（直接导入，最小化首屏 JS）
- * - JourneySection: 旅程横向滚动（动态导入，与 MainSection 并行下载）
- * - MainSection: 卡片群（动态导入）
- * - 滚动位置恢复（等 Journey 挂载后再恢复）
+ * 首页
+ * - HeroSection: 首屏，同步加载（最小、最快可交互）
+ * - JourneySection: 动态加载，带骨架屏
+ * - MainSection: 动态加载，带骨架屏
  */
 "use client";
 
 import { useEffect, useState } from "react";
-import HeroSection from "@/components/HeroSection";
 import dynamic from "next/dynamic";
+import HeroSection from "@/components/HeroSection";
 
-// ★ 动态导入：MainSection（卡片群 + anime.js）与 Journey 并行下载，不拖慢首屏
-const MainSection = dynamic(() => import("@/components/MainSection"));
-// ★ 动态导入：Journey（GSAP ScrollTrigger）并行下载
-const JourneySection = dynamic(() => import("@/components/JourneySection"));
+// ★ 通用骨架屏
+function SectionSkeleton({ label }: { label: string }) {
+  return (
+    <div className="flex h-screen w-full flex-col items-center justify-center bg-ink">
+      <div className="flex flex-col items-center gap-4">
+        <div className="relative h-10 w-10">
+          <span className="absolute inset-0 animate-ping rounded-full bg-cyan/20" />
+          <span className="absolute inset-0 animate-spin rounded-full border-2 border-cyan/30 border-t-cyan" />
+        </div>
+        <span className="font-mono text-[11px] tracking-[0.3em] text-dim">
+          {label}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+const JourneySection = dynamic(() => import("@/components/JourneySection"), {
+  ssr: false,
+  loading: () => <SectionSkeleton label="LOADING JOURNEY..." />,
+});
+
+const MainSection = dynamic(() => import("@/components/MainSection"), {
+  ssr: false,
+  loading: () => <SectionSkeleton label="LOADING CONTENT..." />,
+});
 
 declare global {
   interface Window {
-    /** Journey 挂载标记（滚动恢复用） */
     __journeyReady?: boolean;
   }
 }
@@ -26,25 +46,19 @@ declare global {
 export default function Home() {
   const [journeyMounted, setJourneyMounted] = useState(false);
 
-  /** 刷新保持滚动位置（等 Journey 挂载后再恢复） */
   useEffect(() => {
-    // 禁用浏览器默认滚动恢复（由 JS 接管）
     if ("scrollRestoration" in history) {
       history.scrollRestoration = "manual";
     }
 
-    /** 保存当前滚动位置到 sessionStorage */
     const saveScroll = () => {
       try {
         sessionStorage.setItem("scrollY", String(window.scrollY));
-      } catch {
-        // 静默失败（某些浏览器可能禁用 sessionStorage）
-      }
+      } catch {}
     };
     window.addEventListener("beforeunload", saveScroll);
     window.addEventListener("pagehide", saveScroll);
 
-    /** 尝试恢复滚动位置 */
     const saved = sessionStorage.getItem("scrollY");
     if (saved) {
       const targetY = parseInt(saved, 10);
@@ -59,7 +73,6 @@ export default function Home() {
         });
       };
 
-      /** 等待 Journey 挂载（pin 高度稳定）后再恢复，最多等 2.5 秒兜底 */
       const tryRestore = () => {
         const fallback = setTimeout(doRestore, 2500);
         const check = () => {
@@ -81,7 +94,6 @@ export default function Home() {
     }
 
     return () => {
-      // 恢复浏览器默认滚动行为
       if ("scrollRestoration" in history) {
         history.scrollRestoration = "auto";
       }
@@ -92,10 +104,8 @@ export default function Home() {
 
   return (
     <main>
-      {/* 首屏：直接导入，最小、最快可交互 */}
       <HeroSection />
 
-      {/* Journey：动态导入，挂载后标记状态 */}
       <JourneySection
         onMounted={() => {
           setJourneyMounted(true);
@@ -103,7 +113,6 @@ export default function Home() {
         }}
       />
 
-      {/* Main（卡片群）：动态导入，与 Journey 并行下载 */}
       <MainSection />
     </main>
   );
