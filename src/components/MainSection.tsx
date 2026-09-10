@@ -1,5 +1,4 @@
 // 主页：交互背景 + 两页卡片 + 页脚
-import dynamic from "next/dynamic";
 import InteractiveBackground from "./InteractiveBackground";
 import Reveal from "./Reveal";
 import ProfileCard from "./cards/ProfileCard";
@@ -7,24 +6,10 @@ import TimeCard from "./cards/TimeCard";
 import LinksCard from "./cards/LinksCard";
 import SkillsCard from "./cards/SkillsCard";
 import LanguageRingCard from "./cards/LanguageRingCard";
+import EducationCard from "./cards/EducationCard";
 import ExperienceCard from "./cards/ExperienceCard";
 import WorksCard from "./cards/WorksCard";
 import { PianoCard, DiceRoller, ColorPalette, ReactionTimer } from "./cards/WidgetCards";
-
-// ★ 关键优化：ThreeAtom 独立动态加载（Three.js 500+ KB 不跟 MainSection 一起下）
-const ThreeAtom = dynamic(() => import("./ThreeAtom"), {
-  ssr: false,
-  loading: () => (
-    <div className="flex h-full w-full items-center justify-center bg-ink-2/30">
-      <div className="flex flex-col items-center gap-3">
-        <span className="h-6 w-6 animate-spin rounded-full border-2 border-cyan/30 border-t-cyan" />
-        <span className="font-mono text-[10px] tracking-widest text-dim">
-          LOADING 3D...
-        </span>
-      </div>
-    </div>
-  ),
-});
 
 /** 两页共用的页头 */
 function PageHeader({
@@ -86,26 +71,26 @@ export default function MainSection() {
           />
 
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+            {/* 行 1：个人介绍 · 教育背景 */}
             <Reveal>
               <ProfileCard />
             </Reveal>
+            <Reveal delay={60}>
+              <EducationCard />
+            </Reveal>
+            {/* 行 2：实时时间 · 我的主页 */}
             <Reveal delay={90}>
               <TimeCard />
             </Reveal>
-            <Reveal delay={60}>
+            <Reveal delay={120}>
               <LinksCard />
             </Reveal>
+            {/* 行 3：个人技能 · 项目语言 */}
             <Reveal delay={150}>
               <SkillsCard />
             </Reveal>
             <Reveal delay={180}>
               <LanguageRingCard />
-            </Reveal>
-            {/* 3D 分子装饰（动态加载，有骨架屏） */}
-            <Reveal delay={200}>
-              <div className="card-glass card-line relative h-full min-h-[300px] overflow-hidden p-0">
-                <ThreeAtom />
-              </div>
             </Reveal>
           </div>
         </section>
@@ -169,7 +154,7 @@ export default function MainSection() {
 
         <footer className="border-t border-white/10 px-4 py-10 text-center">
           <p className="font-mono text-xs tracking-[0.3em] text-dim">
-            QEEYU · PERSONAL HOMEPAGE · 2026
+            KUANG · PERSONAL HOMEPAGE · 2026
           </p>
           <p className="mt-2 text-[11px] text-dim/70">
             Built with Next.js 16 · React 19 · Tailwind CSS 4 · GSAP · anime.js · Canvas
