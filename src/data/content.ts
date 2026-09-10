@@ -4,16 +4,18 @@
 
 // —— 个人信息 ——
 export const profile = {
-  name: "QeeYu",
+  name: "邝有航",
   avatar: "/avatar.jpg",
-  tagline: "化工学士 · 全栈开发 · 系统思维践行者",
+  tagline: "化工学生",
   intro:
-    "你好，我是 QeeYu 👋\n" +
-    "化工专业出身，自学全栈开发。\n" +
-    "将化工的「系统优化」思维带入代码世界——\n" +
-    "注重流程、数据驱动、追求极致性能。\n" +
-    "相信：最优雅的代码，和最完美的化工流程一样，\n" +
-    "都是系统工程的艺术。",
+    "你好，我是邝有航 \n" +
+    "西北大学化工专业本科生。\n" +
+    "能够熟练使用电脑,工作软件等\n" +
+    "完成专业学科学习，能够使用各类专业软件如CAD，Aspen+，3DMAX等\n" +
+    "自学全栈开发，和AI等，这是我制作的个人网页\n" +
+    "熟练使用各种AI,自学各种AIGC\n" +
+    "能够本地部署各类AI模型，熟练使用各类agent，目前主要使用DSH\n" +
+    "熟练使用comfyui，自建Krea2，MiniMaxH3等工作流",
 };
 
 // —— 链接项 ——
@@ -27,6 +29,7 @@ export interface LinkItem {
 export const links: LinkItem[] = [
   { label: "GitHub", icon: "🐙", action: "open", href: "https://github.com/QeeYu" },
   { label: "QQ", icon: "🐧", action: "copy", value: "3094554686" },
+  { label: "微信", icon: "💬", action: "copy", value: "kyh3094554686" },
   {
     label: "Bilibili",
     icon: "📺",
@@ -84,198 +87,473 @@ export const languages: LangItem[] = [
 
 // —— 技能（含硬技能 + 软技能） ——
 export const skills = [
-  // 硬技能
-  { name: "React 19", level: 15, icon: "⚛️", url: "https://react.dev" },
-  { name: "Next.js 16", level: 20, icon: "▲", url: "https://nextjs.org" },
-  { name: "Tailwind 4", level: 10, icon: "🌊", url: "https://tailwindcss.com" },
-  { name: "TypeScript", level: 35, icon: "🔷", url: "https://www.typescriptlang.org/zh/" },
-  { name: "GSAP", level: 10, icon: "🟢", url: "https://gsap.com" },
-  { name: "anime.js", level: 10, icon: "🎬", url: "https://animejs.com" },
-  { name: "Node.js", level: 30, icon: "🟩", url: "https://nodejs.org" },
-  // ★ 软技能（化工背景赋予）
-  { name: "系统工程思维", level: 40, icon: "⚙️", url: "#" },
-  { name: "数据驱动决策", level: 35, icon: "📊", url: "#" },
-  { name: "跨学科学习力", level: 45, icon: "🧠", url: "#" },
+  { name: "专业能力", level: 85, url: "#" },
+  { name: "AI使用", level: 70, url: "#" },
+  { name: "agent使用", level: 65, url: "#" },
+  { name: "AIGC能力", level: 75, url: "#" },
+  { name: "前后端编程", level: 60, url: "#" },
+  { name: "skill创造", level: 60, url: "#" },
+  { name: "系统工程思维", level: 80, url: "#" },
+  { name: "跨学科学习力", level: 100, url: "#" },
 ];
 
-// —— 相册 ——
-export const album = [
+// —— 作品集 ——
+export interface WorkItem {
+  title: string;
+  desc: string;
+  category: string;
+  emoji: string;
+  grad: string;
+  src?: string;          // 封面图
+  thumb?: string;        // 缩略图（可选）
+  video?: string;        // ★ 视频链接
+  downloadUrl?: string;  // ★ 工作流下载链接
+  downloadName?: string; // ★ 下载时的文件名
+  tags: string[];
+  href?: string;
+}
+
+const COS_IMAGE = "https://qyzuop-1378763038.cos.ap-chongqing.myqcloud.com/image";
+const COS_VIDEO = "https://qyzuop-1378763038.cos.ap-chongqing.myqcloud.com/video";
+
+export const works: WorkItem[] = [
+  // ============================================================
+  // ① 工作流作品（带 JSON 下载）
+  // ============================================================
   {
-    title: "自创AI角色海报",
+    title: "MiniMax H3 总控工作流",
+    desc: "自建 ComfyUI 总控台工作流，整合 H3 系列模型与多路调度节点，可一键产出批量化作品。下载后可直接导入 ComfyUI 使用。",
+    category: "工作流 · ComfyUI",
+    emoji: "🎛️",
+    grad: "linear-gradient(135deg,#7c5cff,#38e1ff)",
+    src: `${COS_IMAGE}/ComfyuiH3总台流.png`,
+    downloadUrl: `${COS_IMAGE}/miniMax H3总控.json`,
+    downloadName: "MiniMax-H3-总控工作流.json",
+    tags: ["ComfyUI", "工作流", "可下载"],
+  },
+  {
+    title: "Krea2 平面海报工作流",
+    desc: "针对平面海报场景优化的 Krea2 工作流，集成风格控制与高清放大节点，适合商业海报快速产出。",
+    category: "工作流 · ComfyUI",
+    emoji: "🎨",
+    grad: "linear-gradient(135deg,#ff5c8a,#7c5cff)",
+    src: `${COS_IMAGE}/krea2平面海报.png`,
+    downloadUrl: `${COS_IMAGE}/krea2平面海报.json`,
+    downloadName: "Krea2-平面海报工作流.json",
+    tags: ["ComfyUI", "Krea2", "海报", "可下载"],
+  },
+  {
+    title: "Krea2 生图对比工作流",
+    desc: "用于对比不同参数/模型出图效果的实验性工作流，同一提示词可并行生成多路结果，便于调参。",
+    category: "工作流 · ComfyUI",
+    emoji: "🔬",
+    grad: "linear-gradient(135deg,#38e1ff,#b4ff39)",
+    src: `${COS_IMAGE}/krea2生图对比工作流.png`,
+    downloadUrl: `${COS_IMAGE}/krea2生图对比.json`,
+    downloadName: "Krea2-生图对比工作流.json",
+    tags: ["ComfyUI", "Krea2", "对比", "可下载"],
+  },
+  {
+    title: "Krea2 人物资产工作流",
+    desc: "人物角色资产生成工作流，支持角色一致性控制与多姿态输出，适合作为角色设定集的生产工具。",
+    category: "工作流 · ComfyUI",
+    emoji: "🧑‍🎨",
+    grad: "linear-gradient(135deg,#ff9f5c,#ff5c8a)",
+    src: `${COS_IMAGE}/人物资产工作流.png`,
+    downloadUrl: `${COS_IMAGE}/krea2人物资产.json`,
+    downloadName: "Krea2-人物资产工作流.json",
+    tags: ["ComfyUI", "Krea2", "人物", "可下载"],
+  },
+
+  // ============================================================
+  // ② AI 图像作品
+  // ============================================================
+  {
+    title: "AI 角色海报1",
+    desc: "ComfyUI Krea2 出图作品。",
+    category: "AIGC · 视觉",
     emoji: "🌙",
     grad: "linear-gradient(135deg,#7c5cff,#38e1ff)",
-    src: "/album/1.jpg",
+    src: `${COS_IMAGE}/ComfyUI_01591_.png`,
+    tags: ["ComfyUI", "AI 绘画", "krea2", "角色"],
   },
   {
-    title: "超帅的卡芙卡AI",
-    emoji: "☕",
-    grad: "linear-gradient(135deg,#ff9f5c,#ff5c8a)",
-    src: "/album/2.jpg",
-  },
-  {
-    title: "AI海报卡芙卡2",
-    emoji: "🚀",
+    title: "AI 角色海报2",
+    desc: "ComfyUI Krea2 出图作品。",
+    category: "AIGC · 视觉",
+    emoji: "🌌",
     grad: "linear-gradient(135deg,#38e1ff,#b4ff39)",
-    src: "/album/3.jpg",
+    src: `${COS_IMAGE}/ComfyUI_01605_.png`,
+    tags: ["ComfyUI", "AI 绘画", "krea2", "角色"],
   },
   {
-    title: "玛奇玛也很帅",
-    emoji: "🌧️",
-    grad: "linear-gradient(135deg,#4b6cb7,#182848)",
-    src: "/album/4.jpg",
-  },
-  {
-    title: "玛奇玛2",
-    emoji: "🖥️",
+    title: "AI 角色海报3",
+    desc: "ComfyUI Krea2 出图作品。",
+    category: "AIGC · 视觉",
+    emoji: "🎭",
     grad: "linear-gradient(135deg,#ff5c8a,#7c5cff)",
-    src: "/album/5.jpg",
+    src: `${COS_IMAGE}/ComfyUI_01615_.png`,
+    tags: ["ComfyUI", "AI 绘画", "krea2", "角色"],
   },
   {
-    title: "Fate还不错",
-    emoji: "⛰️",
-    grad: "linear-gradient(135deg,#11998e,#38ef7d)",
-    src: "/album/6.jpg",
+    title: "AI 角色海报4",
+    desc: "ComfyUI Krea2 出图作品。",
+    category: "AIGC · 视觉",
+    emoji: "🌆",
+    grad: "linear-gradient(135deg,#ff9f5c,#ff5c8a)",
+    src: `${COS_IMAGE}/ComfyUI_01628_.png`,
+    tags: ["ComfyUI", "AI 绘画", "krea2", "角色"],
+  },
+
+  // ============================================================
+  // ③ 视频作品
+  // ============================================================
+  {
+    title: "MiniMax H3 · 短片 069",
+    desc: "MiniMax H3 模型生成的 AI 动画短片。",
+    category: "AIGC · 视频",
+    emoji: "🎬",
+    grad: "linear-gradient(135deg,#7c5cff,#ff5c8a)",
+    video: `${COS_VIDEO}/MiniMax_H3_00069_.mp4`,
+    tags: ["MiniMax H3", "视频", "AI 动画"],
+  },
+  {
+    title: "MiniMax H3 · 短片 071",
+    desc: "MiniMax H3 模型生成短片。",
+    category: "AIGC · 视频",
+    emoji: "🎞️",
+    grad: "linear-gradient(135deg,#38e1ff,#7c5cff)",
+    video: `${COS_VIDEO}/MiniMax_H3_00071_.mp4`,
+    tags: ["MiniMax H3", "视频", "AI 动画"],
+  },
+  {
+    title: "MiniMax H3 · 短片 086",
+    desc: "MiniMax H3 模型生成短片。",
+    category: "AIGC · 视频",
+    emoji: "🎥",
+    grad: "linear-gradient(135deg,#ff5c8a,#ff9f5c)",
+    video: `${COS_VIDEO}/MiniMax_H3_00086_.mp4`,
+    tags: ["MiniMax H3", "视频", "AI 动画"],
+  },
+  {
+    title: "MiniMax H3 · 短片 105",
+    desc: "MiniMax H3 模型生成短片。",
+    category: "AIGC · 视频",
+    emoji: "📽️",
+    grad: "linear-gradient(135deg,#b4ff39,#38e1ff)",
+    video: `${COS_VIDEO}/MiniMax_H3_00105_.mp4`,
+    tags: ["MiniMax H3", "视频", "AI 动画"],
   },
 ];
 
-// —— 日记 ——
-export const diary = [
-  {
-    date: "2026-08-23",
-    title: "把动画调到了丝滑",
-    mood: "😎",
-    text: "今天终于把横向滚动的 scrub 调到了 1，动画像黄油一样顺滑。原来性能和美感可以兼得，秘诀就是 rAF + transform。",
-  },
-  {
-    date: "2026-08-23",
-    title: "和 Canvas 粒子大战三百回合",
-    mood: "🤯",
-    text: "为了 4K 屏不卡顿，把 devicePixelRatio 限制到 2，粒子数按面积自适应。优化完帧率稳稳 60fps，舒服了。",
-  },
-  {
-    date: "2026-08-23",
-    title: "环形图的反向旋转",
-    mood: "🤔",
-    text: "想让环形语言图的标签一直保持水平：外层正转 360°，标签自身反转 360°，速度相同方向相反，就是永恒的水平。有点哲学。",
-  },
-  {
-    date: "2026-08-23",
-    title: "劳动节也在劳动",
-    mood: "🛠️",
-    text: "给自己主页加了个迷你音琴，用 Web Audio 纯手写振荡器发声。第一次听到自己代码「弹」出音符，值了。",
-  },
-];
+// ====================================================================
+// Journey 面板数据（快速自我介绍的 6 章节）
+// ====================================================================
+export type JourneyPanelType =
+  | "intro"
+  | "courses"
+  | "skills"
+  | "ai"
+  | "fullstack"
+  | "traits";
 
-// —— 一言 ——
-export const hitokoto = [
-  "代码如诗，bug 如标点。",
-  "今天的动画，比昨天多丝滑 1%。",
-  "把复杂留给机器，把简单留给人。",
-  "每一个像素都值得被认真对待。",
-  "灵感总在洗完澡之后到来。",
-  "先让它跑起来，再让它美起来。",
-  "删掉的代码，才是最好的代码。",
-  "屏幕里的光，都是热爱的证据。",
-  "人生没有 Ctrl+Z，所以更要认真生活。",
-  "慢慢来，比较快。",
-];
-
-// —— Journey 面板数据（新增化工背景面板） ——
 export interface JourneyStat {
   value: number;
-  suffix: string;
+  suffix?: string;
   label: string;
+  icon: string;
 }
+
+export interface JourneyCourseGroup {
+  label: string;
+  icon: string;
+  items: string[];
+}
+
+export interface JourneySkillCard {
+  icon: string;
+  title: string;
+  desc: string;
+  tags: string[];
+}
+
+export interface JourneyTrait {
+  icon: string;
+  title: string;
+  desc: string;
+}
+
 export interface JourneyPanel {
+  type: JourneyPanelType;
   chapter: string;
-  titleBefore: string;
-  titleHighlight: string;
-  titleAfter: string;
-  text?: string;
-  stats?: JourneyStat[];
-  tags?: string[];
   accent: string;
+  titleBefore?: string;
+  titleHighlight?: string;
+  titleAfter?: string;
+  subtitle?: string;
+  stats?: JourneyStat[];
+  courseGroups?: JourneyCourseGroup[];
+  skillCards?: JourneySkillCard[];
+  traits?: JourneyTrait[];
 }
 
 export const journeyPanels: JourneyPanel[] = [
   {
-    chapter: "CHAPTER 00 · 起点",
-    titleBefore: "化工学士 → ",
-    titleHighlight: "全栈开发者",
-    titleAfter: " 🧪",
-    text: "用化工的严谨，写干净的代码。\n从物料衡算到状态管理，\n从反应器设计到系统架构，\n跨界，是我最强的竞争力。",
+    type: "intro",
+    chapter: "CHAPTER 00 · 主角登场",
     accent: "text-cyan",
+    titleBefore: "你好，我是",
+    titleHighlight: "邝有航",
+    titleAfter: " 👋",
+    subtitle:
+      "西北大学 · 化工专业 · 能源化学工程方向\n" +
+      "化工的系统思维 × 全栈的工程实践 × AI 的深度应用\n" +
+      "一个喜欢跨界，并且把每一件都做到极致的家伙。",
     stats: [
-      { value: 4, suffix: " 年", label: "化工学习" },
-      { value: 1.5, suffix: " 年", label: "全栈自学" },
-      { value: 20, suffix: " +", label: "个人项目" },
+      { value: 4, suffix: " 年", label: "化工学习", icon: "🧪" },
+      { value: 38, suffix: " +", label: "专业课程", icon: "📚" },
+      { value: 30, suffix: " +", label: "大学实验", icon: "⚗️" },
+      { value: 3, suffix: " 线", label: "跨界技能", icon: "🚀" },
     ],
   },
   {
-    chapter: "CHAPTER 01",
-    titleBefore: "一切，",
-    titleHighlight: "从这里开始",
-    titleAfter: "",
-    text: "欢迎来到 QeeYu 的个人主页。\n这里记录了一个化工学生的编程成长之路。",
-    accent: "text-cyan",
-  },
-  {
-    chapter: "CHAPTER 02 · 热爱",
-    titleBefore: "为热爱 ",
-    titleHighlight: "发电",
-    titleAfter: " 🔥",
-    text: "白天写代码，晚上调动画；\n把每一个像素，都当作作品来雕琢。",
-    accent: "text-pink",
-  },
-  {
-    chapter: "CHAPTER 03 · 数字",
-    titleBefore: "一些",
-    titleHighlight: "奇怪的统计",
-    titleAfter: " 📊",
-    stats: [
-      { value: 1, suffix: " 个", label: "Hello World" },
-      { value: 99, suffix: " +", label: "Bug 已修复" },
-      { value: 3, suffix: " 个", label: "失眠夜" },
-      { value: 0, suffix: " 的", label: "Offer 已收到" },
-    ],
+    type: "courses",
+    chapter: "CHAPTER 01 · 学科地图",
     accent: "text-lime",
-  },
-  {
-    chapter: "CHAPTER 04 · 哲学",
-    titleBefore: "动画，是页面的",
-    titleHighlight: "呼吸",
-    titleAfter: " 🌬️",
-    text: "一次缓动、一帧延迟、一点过冲，\n都是人机之间无声的悄悄话。",
-    accent: "text-cyan",
-  },
-  {
-    chapter: "CHAPTER 05 · 装备",
     titleBefore: "我的",
-    titleHighlight: "工具箱",
-    titleAfter: " 🧰",
-    tags: ["React", "Next.js", "TypeScript", "Tailwind", "GSAP", "anime.js", "Canvas", "Node.js"],
-    accent: "text-neon",
+    titleHighlight: "专业课程",
+    titleAfter: "",
+    subtitle: "从化学基础到工程实践 · 4 年沉淀 · 系统完整",
+    courseGroups: [
+      {
+        label: "化学基础",
+        icon: "🧬",
+        items: ["无机化学", "分析化学", "有机化学", "物理化学", "仪器分析"],
+      },
+      {
+        label: "化工核心",
+        icon: "⚗️",
+        items: [
+          "化工原理",
+          "化工热力学",
+          "化学反应工程",
+          "化工分离过程",
+          "化工传递过程",
+          "化工过程分析与合成",
+        ],
+      },
+      {
+        label: "工程实践",
+        icon: "🛠️",
+        items: [
+          "工程制图",
+          "化工设备机械基础",
+          "化工设计与计算",
+          "化工仪表及自动化",
+          "化工原理课程设计",
+          "机械设备基础课程设计",
+        ],
+      },
+      {
+        label: "能源与环保",
+        icon: "🌱",
+        items: [
+          "新能源与可再生能源",
+          "能源化学工艺学",
+          "煤化学",
+          "化工环保与安全",
+          "电工与电子技术基础",
+          "化工应用软件",
+        ],
+      },
+    ],
   },
   {
-    chapter: "CHAPTER 06 · 抵达",
-    titleBefore: "欢迎来到",
-    titleHighlight: "我的主页",
-    titleAfter: " 🎉",
-    text: "开场动画到此结束，\n故事才刚刚开始 —— 继续下滑，去认识一个更完整的 QeeYu。",
+    type: "skills",
+    chapter: "CHAPTER 02 · 实验与工具",
+    accent: "text-cyan",
+    titleBefore: "实验 · ",
+    titleHighlight: "专业软件",
+    titleAfter: "",
+    subtitle: "扎实的实验功底 · 熟练的专业工具链",
+    skillCards: [
+      {
+        icon: "⚗️",
+        title: "实验能力",
+        desc: "熟练各类化工专业实验，优秀完成大学阶段全部实验课程，具备严谨的操作规范与数据处理能力。",
+        tags: ["基础化学实验", "化工原理实验", "仪器分析"],
+      },
+      {
+        icon: "📐",
+        title: "专业软件",
+        desc: "熟练使用各类化工与工程设计软件，覆盖流程模拟、图纸绘制、三维建模等核心场景。",
+        tags: ["CAD", "Aspen Plus", "3DMAX"],
+      },
+      {
+        icon: "📊",
+        title: "办公与文档",
+        desc: "熟练使用 Office 全家族办公软件，能够高质量完成课程报告、数据分析与技术文档撰写。",
+        tags: ["Word", "Excel", "PowerPoint"],
+      },
+      {
+        icon: "💻",
+        title: "电脑技能",
+        desc: "熟练使用电脑，具备快速学习新软件、新系统与新工具的能力，技术敏感度高。",
+        tags: ["Windows", "系统工具", "快速上手"],
+      },
+    ],
+  },
+  {
+    type: "ai",
+    chapter: "CHAPTER 03 · AI 探索",
+    accent: "text-neon",
+    titleBefore: "AI ",
+    titleHighlight: "深度应用",
+    titleAfter: "",
+    subtitle: "从使用者到构建者 · 从云端到本地",
+    skillCards: [
+      {
+        icon: "🤖",
+        title: "AI 精通使用",
+        desc: "精通各类 AI 工具的使用，能够针对不同场景选择最合适的模型与工作方式。",
+        tags: ["提示工程", "模型选型", "效率倍增"],
+      },
+      {
+        icon: "🧠",
+        title: "AI 智能体",
+        desc: "熟练使用 AI Agent 完成复杂任务编排，日常主力使用 CODEX 与 DSH 进行自动化流程。",
+        tags: ["CODEX", "DSH", "任务编排"],
+      },
+      {
+        icon: "🏠",
+        title: "本地化部署",
+        desc: "能够独立完成各类 AI 模型的本地化部署，掌握推理环境配置、显存优化与私有化运行。",
+        tags: ["本地部署", "推理环境", "私有化"],
+      },
+      {
+        icon: "🎨",
+        title: "ComfyUI 工作流",
+        desc: "本地化使用 ComfyUI，自建完整工作流，覆盖文生图、图生图、ControlNet 等各类场景。",
+        tags: ["ComfyUI", "自建工作流", "AIGC"],
+      },
+      {
+        icon: "⚙️",
+        title: "自建 Skills",
+        desc: "根据个人需求自建 AI Skills 与工具链，让 AI 真正成为贴合自己工作流的专属助手。",
+        tags: ["Skills", "工具链", "定制化"],
+      },
+      {
+        icon: "🌐",
+        title: "API 调用集成",
+        desc: "熟悉各类 AI 服务的 API 调用方式，能够将 AI 能力集成到自建的 Web 应用与服务中。",
+        tags: ["API", "集成", "本地服务"],
+      },
+    ],
+  },
+  {
+    type: "fullstack",
+    chapter: "CHAPTER 04 · 跨界全栈",
     accent: "text-pink",
+    titleBefore: "自学",
+    titleHighlight: "全栈开发",
+    titleAfter: "",
+    subtitle: "化工之外的另一个世界 · 从 0 到 1 独立完成",
+    skillCards: [
+      {
+        icon: "🎨",
+        title: "前端开发",
+        desc: "独立完成个人网页项目，掌握 React、Next.js、Tailwind 等现代前端技术栈与动画方案。",
+        tags: ["React", "Next.js", "Tailwind", "GSAP"],
+      },
+      {
+        icon: "🗄️",
+        title: "后端开发",
+        desc: "独立完成后端服务搭建，包括个人数据库设计、本地 AI API 调用与业务逻辑实现。",
+        tags: ["Node.js", "数据库", "API 调用"],
+      },
+      {
+        icon: "🖥️",
+        title: "服务器搭建",
+        desc: "个人独立搭建服务器环境，完成部署、运维与域名解析，具备完整的全栈落地能力。",
+        tags: ["服务器", "部署", "运维"],
+      },
+    ],
+  },
+  {
+    type: "traits",
+    chapter: "CHAPTER 05 · 我的特质",
+    accent: "text-lime",
+    titleBefore: "我，是这样的",
+    titleHighlight: "一个人",
+    titleAfter: "",
+    subtitle: "化工 × AI × 全栈 · 用跨界构建不可替代性",
+    traits: [
+      {
+        icon: "🌉",
+        title: "跨学科学习力拉满",
+        desc: "从化工到 AI 到全栈开发，跨越三个领域依然游刃有余。跨学科不是浅尝辄止，而是每一门都钻研到底。",
+      },
+      {
+        icon: "🎯",
+        title: "专业能力精通",
+        desc: "化工专业知识体系完整扎实，从基础化学到工程设计，每一门课都留下扎实的实践痕迹。",
+      },
+      {
+        icon: "🔥",
+        title: "学习动力强劲",
+        desc: "持续学习、主动探索是本能。看到新技术就想上手，遇到新问题就想钻研，永远保持在路上的状态。",
+      },
+      {
+        icon: "🛠️",
+        title: "动手能力强",
+        desc: "从实验室的烧杯到服务器的终端，从 AI 模型到 Web 应用，习惯将想法落地为真实可用的成果。",
+      },
+    ],
   },
 ];
 
-// —— 时间线数据（用于 TimelineCard） ——
-export interface TimelineItem {
-  date: string;
+// ====================================================================
+// 经历数据（用于 ExperienceCard）
+// ====================================================================
+export interface Experience {
+  period: string;
   title: string;
+  org: string;
   desc: string;
-  icon?: string;
+  tags?: string[];
+  current?: boolean;
 }
-export const timeline: TimelineItem[] = [
-  { date: "2023", title: "化工专业在读", desc: "学习化工原理、反应工程、流程优化", icon: "🧪" },
-  { date: "2024", title: "自学编程", desc: "从 HTML/CSS 到 JavaScript/React", icon: "💻" },
-  { date: "2025", title: "全栈入门", desc: "Next.js + TypeScript + Tailwind", icon: "🚀" },
-  { date: "2026", title: "个人主页上线", desc: "首个完整的全栈作品", icon: "🎉" },
+
+export const experiences: Experience[] = [
+  {
+    period: "2025 - 至今",
+    title: "AIGC 工作流开发者",
+    org: "个人项目",
+    desc: "自建 ComfyUI 工作流 5 套（角色/海报/对比/人物资产/总控），部署 MiniMax H3 本地模型搭建视频生成流水线，累计产出 AI 图像与视频作品 200+。",
+    tags: ["ComfyUI", "MiniMax H3", "AIGC"],
+    current: true,
+  },
+  {
+    period: "2026 - 至今",
+    title: "全栈开发 · 个人项目",
+    org: "自学 + 独立开发",
+    desc: "掌握 React、Next.js、TypeScript 与 Tailwind，从零设计并上线个人主页，集成 3D 动画、Canvas 粒子、GSAP 滚动动画与音琴应用。",
+    tags: ["Next.js", "React", "TypeScript", "GSAP"],
+    current: true,
+  },
+  {
+    period: "2024 - 至今",
+    title: "AI 工具深度探索",
+    org: "个人学习",
+    desc: "系统学习 Prompt Engineering、AI Agent 编排与本地大模型部署，主力使用 Codex 与 DSH 完成日常自动化任务，搭建专属 AI 工具链。",
+    tags: ["Prompt", "Agent", "本地部署"],
+    current: true,
+  },
+  {
+    period: "2023.09 - 2027.06",
+    title: "能源化学工程 · 本科在读",
+    org: "西北大学",
+    desc: "主修化学基础、化工核心、工程实践三大方向共 20+ 门课程，完成化工原理课程设计与机械设备基础课程设计，优秀完成大学阶段全部实验课程。",
+    tags: ["化工原理", "反应工程", "课程设计"],
+  },
 ];

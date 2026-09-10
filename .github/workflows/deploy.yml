@@ -2,10 +2,23 @@ name: Deploy to VPS
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
+
+# ============================================================
+# 部署策略：与 next.config.ts 的 output: "export" 保持一致
+#   - 在 GitHub Actions 云端构建，产出静态站点 out/
+#   - 通过 rsync 同步到 VPS 的 Nginx 网站根目录
+#   - 服务器上无需 Node 运行时、无需常驻进程
+#
+# 需要的 Repository Secrets：
+#   HOST             → VPS IP / 域名
+#   USERNAME         → SSH 用户
+#   SSH_PRIVATE_KEY  → SSH 私钥（含换行）
+#   DEPLOY_PATH      → Nginx 站点目录（如 /var/www/qeeyu/）
+# ============================================================
 
 jobs:
-  deploy:
+  build-and-deploy:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -15,32 +28,20 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '22'
+          cache: 'npm'
 
-      # 可选：在 GitHub Actions 云端先构建，但根据你的情况，我们直接在服务器上构建
-      # 但为了更快，可以在这里构建然后只同步产物，但为了简单，我们保持服务器构建
+      - name: Install dependencies
+        run: npm install
 
-      - name: Deploy to VPS via SSH
-        uses: appleboy/ssh-action@v1
+      - name: Build (static export → out/)
+        run: npm run build
+
+      - name: Rsync out/ to VPS
+        uses: burnett01/rsync-deployments@7.0.1
         with:
-          host: ${{ secrets.HOST }}
-          username: ${{ secrets.USERNAME }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          script: |
-            # 加载 NVM 环境（确保 node/npm 可用）
-            export NVM_DIR="$HOME/.nvm"
-            [ -s "$NVM_DIR/nvm.sh" ] && source "$NVM_DIR/nvm.sh"
-
-            # 进入项目目录
-            cd ${{ secrets.DEPLOY_PATH }}
-
-            # 拉取最新代码
-            git reset --hard HEAD
-            git pull origin main
-
-            # 使用绝对路径执行 npm（避免环境变量问题）
-            /home/Ubuntu/.nvm/versions/node/v22.23.2/bin/npm install
-            /home/Ubuntu/.nvm/versions/node/v22.23.2/bin/npm run build
-
-            # 重启服务
-            sudo systemctl restart nextjs
-            #test
+          switches: -avzr --delete
+          path: out/
+          remote_path: ${{ secrets.DEPLOY_PATH }}
+          remote_host: ${{ secrets.HOST }}
+          remote_user: ${{ secrets.USERNAME }}
+          remote_key: ${{ secrets.SSH_PRIVATE_KEY }}

@@ -2,8 +2,8 @@
  * 音琴主页面
  * - 优化键盘映射：保留原逻辑，补全缺失按键，覆盖 25/37/49 键
  * - 加载进度条 + CDN 预连接
- * - ★ 自动激活音频 + 自动加载音色（无需用户点击）
- * - ★ 已移除"点击激活音频"提示
+ * - ★ 自动尝试激活音频 + 自动加载音色
+ * - ★ 若被浏览器自动播放策略拦截，则在首次用户交互（点击/触摸/按键）时自动激活
  */
 "use client";
 
@@ -33,34 +33,53 @@ import SettingsPanel from "./SettingsPanel";
 type Mode = "score" | "free";
 
 /**
- * 生成完整键盘映射（保留原 DEFAULT_KEYMAP 风格，补全缺失按键）
+ * 生成完整键盘映射
+ * - 以 DEFAULT_KEYMAP 为基础，叠加用户自定义键位
+ * - 未覆盖的 pos 依次从「扩展键池」分配（已去重、已过滤与默认键位冲突的键）
+ * - 仍不足时用 `key_<pos>` 占位
  */
-function generateFullKeymap(keyCount: number, userMap: Record<string, number> = {}): Record<string, number> {
+function generateFullKeymap(
+  keyCount: number,
+  userMap: Record<string, number> = {}
+): Record<string, number> {
   const baseMap = { ...DEFAULT_KEYMAP };
 
-  const extendedKeys = [
+  // ★ 扩展键池：去掉重复项（如原来重复出现的 "8"），并过滤掉与默认键位冲突的键
+  const extendedPool = [
     "a", "4", "8", "-", "\\",
-    "1", "3", "5", "6", "7", "8", "9", "0", "=",
+    "1", "3", "5", "6", "7", "9", "0", "=",
     ";", "'", ",", ".", "/",
+    "f", "k", "l",
   ];
+  const seen = new Set<string>();
+  const extendedKeys = extendedPool.filter((k) => {
+    if (seen.has(k)) return false;
+    seen.add(k);
+    return baseMap[k] === undefined; // 与默认键位冲突的键排除（如 3/5/6/7/9/0/=）
+  });
 
   const result: Record<string, number> = { ...baseMap, ...userMap };
   const assignedPositions = new Set(Object.values(result));
   let nextKeyIndex = 0;
 
   for (let pos = 0; pos < keyCount; pos++) {
-    if (!assignedPositions.has(pos)) {
-      while (nextKeyIndex < extendedKeys.length && result[extendedKeys[nextKeyIndex]] !== undefined) {
-        nextKeyIndex++;
-      }
-      if (nextKeyIndex < extendedKeys.length) {
-        const key = extendedKeys[nextKeyIndex];
-        result[key] = pos;
-        nextKeyIndex++;
-      } else {
-        result[`key_${pos}`] = pos;
-      }
+    if (assignedPositions.has(pos)) continue;
+
+    while (
+      nextKeyIndex < extendedKeys.length &&
+      result[extendedKeys[nextKeyIndex]] !== undefined
+    ) {
+      nextKeyIndex++;
     }
+
+    if (nextKeyIndex < extendedKeys.length) {
+      const key = extendedKeys[nextKeyIndex];
+      result[key] = pos;
+      nextKeyIndex++;
+    } else {
+      result[`key_${pos}`] = pos;
+    }
+    assignedPositions.add(pos);
   }
 
   return result;
@@ -89,7 +108,6 @@ export default function PianoPage() {
   const [timbreReady, setTimbreReady] = useState<string | null>(null);
   const [timbreFailed, setTimbreFailed] = useState<string | null>(null);
   const [loadProgress, setLoadProgress] = useState<number>(0);
-  // ★ 标记是否已完成初始加载
   const [initialLoadDone, setInitialLoadDone] = useState(false);
 
   const readyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -97,19 +115,21 @@ export default function PianoPage() {
   const headerRef = useRef<HTMLElement>(null);
   const [headerH, setHeaderH] = useState(56);
   const progressTimer = useRef<ReturnType<typeof setInterval> | null>(null);
-  // ★ 标记是否已尝试过自动激活音频
   const autoActivateAttempted = useRef(false);
 
   const keys = useMemo(() => buildKeys(baseOctave, keyCount), [baseOctave, keyCount]);
 
+  // ★ 修复：把 customKeymap 加入依赖，remap 后 UI 立即更新
   const keymap = useMemo(() => {
-    let savedCustom: Record<string, number> = {};
-    try {
-      const saved = localStorage.getItem(STORAGE_KEYS.keymap);
-      if (saved) savedCustom = JSON.parse(saved);
-    } catch {}
+    let savedCustom: Record<string, number> = customKeymap;
+    if (Object.keys(savedCustom).length === 0) {
+      try {
+        const saved = localStorage.getItem(STORAGE_KEYS.keymap);
+        if (saved) savedCustom = JSON.parse(saved);
+      } catch {}
+    }
     return generateFullKeymap(keyCount, savedCustom);
-  }, [keyCount]);
+  }, [keyCount, customKeymap]);
 
   // ---- 顶栏高度测量 ----
   useEffect(() => {
@@ -152,59 +172,61 @@ export default function PianoPage() {
   }, [sustainOn]);
 
   // ============================================================
-  // ★★★ 自动激活音频 + 自动加载音色（无需用户点击）★★★
+  // ★ 自动激活音频 + 自动加载音色
+  //   - 页面加载后先尝试激活（很多情况下会被自动播放策略拦截）
+  //   - 同时挂载一次性手势监听作为兜底：用户第一次点击/触摸/按键时自动激活
   // ============================================================
-
-  /**
-   * ★ 自动激活音频并加载音色
-   * 页面加载后自动执行，无需用户交互
-   */
   useEffect(() => {
-    // 防止重复执行
     if (autoActivateAttempted.current) return;
     autoActivateAttempted.current = true;
 
-    // 延迟一小段时间，确保 DOM 完全渲染
-    const timer = setTimeout(async () => {
-      try {
-        // 尝试激活 AudioContext（如果被浏览器拦截，会静默失败）
-        await Tone.start();
-        console.log("[Piano] ✅ 音频自动激活成功");
-      } catch (e) {
-        console.log("[Piano] ⚠️ 音频自动激活被浏览器拦截，等待用户交互");
-      }
-
-      // ★ 无论音频是否激活成功，都开始加载音色
-      // （Tone.Sampler 加载不依赖 AudioContext 状态）
-      const savedTimbre = localStorage.getItem(STORAGE_KEYS.timbre);
-      const targetTimbre = savedTimbre && TIMBRE_LIST.some((t) => t.id === savedTimbre)
-        ? savedTimbre
-        : "piano";
-
-      if (targetTimbre !== timbre) {
-        setTimbre(targetTimbre);
-      }
-
-      // 开始加载音色
-      await loadTimbreWithProgress(targetTimbre);
-
-      // 标记初始加载完成
-      setInitialLoadDone(true);
-
-      // 再次尝试激活音频（可能之前被拦截，现在用户可能已有交互）
+    const tryActivate = async (): Promise<boolean> => {
       try {
         if (Tone.getContext().state !== "running") {
           await Tone.start();
         }
-      } catch {}
+        return Tone.getContext().state === "running";
+      } catch {
+        return false;
+      }
+    };
+
+    // ★ 首次用户手势兜底激活
+    const onFirstGesture = () => {
+      void tryActivate();
+    };
+    window.addEventListener("pointerdown", onFirstGesture, { once: true });
+    window.addEventListener("keydown", onFirstGesture, { once: true });
+
+    const timer = setTimeout(async () => {
+      const ok = await tryActivate();
+      console.log(
+        ok
+          ? "[Piano] ✅ 音频自动激活成功"
+          : "[Piano] ⏳ 等待首次用户交互后自动激活"
+      );
+
+      // 采样加载不依赖 AudioContext 是否 running，直接开始加载
+      const savedTimbre = localStorage.getItem(STORAGE_KEYS.timbre);
+      const targetTimbre =
+        savedTimbre && TIMBRE_LIST.some((t) => t.id === savedTimbre) ? savedTimbre : "piano";
+
+      if (targetTimbre !== timbre) setTimbre(targetTimbre);
+
+      await loadTimbreWithProgress(targetTimbre);
+      setInitialLoadDone(true);
     }, 300);
 
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener("pointerdown", onFirstGesture);
+      window.removeEventListener("keydown", onFirstGesture);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   /**
-   * ★ 当 timbre 变化时自动加载音色（仅当初始加载已完成）
+   * 当 timbre 变化时自动加载音色（仅当初始加载已完成）
    */
   useEffect(() => {
     if (initialLoadDone) {
@@ -308,13 +330,15 @@ export default function PianoPage() {
       }
 
       if (!isRestSkip) {
-        // ★ 播放前确保音频已激活
+        // 播放前确保音频已激活
         const ensureAudio = async () => {
           if (Tone.getContext().state !== "running") {
-            try { await Tone.start(); } catch {}
+            try {
+              await Tone.start();
+            } catch {}
           }
         };
-        ensureAudio();
+        void ensureAudio();
         void engine.play(freq);
       }
 
@@ -411,15 +435,12 @@ export default function PianoPage() {
   }, [keymap, pressPos, remapMode, remapTarget, keys.length, nameOfPos, settingsOpen, specialKeys]);
 
   // ============================================================
-  // ★★★ 核心函数：加载音色（带进度条）★★★
+  // ★ 核心函数：加载音色（带进度条）
   // ============================================================
-
   const loadTimbreWithProgress = useCallback(
     async (id: string) => {
-      // 先更新引擎的当前音色
       await engine.setTimbre(id);
 
-      // 检查是否已加载
       if (engine.isTimbreLoaded(id)) {
         setLoadProgress(100);
         const name = TIMBRE_LIST.find((t) => t.id === id)?.name ?? "";
@@ -430,7 +451,6 @@ export default function PianoPage() {
         return;
       }
 
-      // 未加载 → 显示进度条
       setLoadingTimbre(id);
       setLoadProgress(0);
       setTimbreReady(null);
@@ -446,7 +466,6 @@ export default function PianoPage() {
         });
       }, 300);
 
-      // 轮询等待加载完成
       const startTime = Date.now();
       await new Promise<void>((resolve) => {
         const check = () => {
@@ -616,7 +635,11 @@ export default function PianoPage() {
       >
         {sustainOn ? "开" : "关"}
       </span>
-      <span className={`block h-2 w-2 rounded-full transition-colors sm:hidden ${sustainOn ? "bg-cyan" : "bg-white/20"}`} />
+      <span
+        className={`block h-2 w-2 rounded-full transition-colors sm:hidden ${
+          sustainOn ? "bg-cyan" : "bg-white/20"
+        }`}
+      />
       <span className="hidden rounded-md bg-white/10 px-1.5 py-0.5 text-[10px] font-bold text-mist/70 sm:block sm:px-2 sm:text-xs">
         {keyDisplayName(specialKeys.sustain)}
       </span>
@@ -637,7 +660,9 @@ export default function PianoPage() {
         >
           ← 返回
         </Link>
-        <h1 className="hidden flex-shrink-0 text-base font-black text-gradient sm:block">QeeYu 音琴</h1>
+        <h1 className="hidden flex-shrink-0 text-base font-black text-gradient sm:block">
+          QeeYu 音琴
+        </h1>
         <span className="flex-shrink-0 text-sm font-black text-gradient sm:hidden">音琴</span>
         <div className="flex-1" />
 
@@ -668,7 +693,9 @@ export default function PianoPage() {
           >
             −
           </button>
-          <span className="flex-shrink-0 font-mono text-xs font-black text-cyan sm:text-sm">C{baseOctave}</span>
+          <span className="flex-shrink-0 font-mono text-xs font-black text-cyan sm:text-sm">
+            C{baseOctave}
+          </span>
           <button
             onClick={() => changeOctave(Math.min(5, baseOctave + 1))}
             className="h-6 w-6 cursor-pointer rounded-full text-sm text-mist hover:bg-white/10 disabled:opacity-30 sm:h-7 sm:w-7 sm:text-base"
@@ -678,7 +705,9 @@ export default function PianoPage() {
           </button>
         </div>
 
-        <span className="hidden flex-shrink-0 font-mono text-xs text-dim md:block">{keyCount}键</span>
+        <span className="hidden flex-shrink-0 font-mono text-xs text-dim md:block">
+          {keyCount}键
+        </span>
         <span className="hidden flex-shrink-0 font-mono text-xs text-dim md:block xl:block">
           {TIMBRE_LIST.find((t) => t.id === timbre)?.name}
         </span>
@@ -691,13 +720,13 @@ export default function PianoPage() {
         </button>
       </header>
 
-      {/* ★★★ 已移除音频激活提示 ★★★ */}
-
       {/* 加载进度条 */}
       {loadingTimbre && (
         <div className="fixed left-1/2 top-16 z-[299] w-[min(400px,80vw)] -translate-x-1/2 rounded-xl border border-neon/30 bg-ink-2/95 p-3 backdrop-blur-md">
           <div className="flex items-center justify-between text-xs text-neon">
-            <span>正在加载 {TIMBRE_LIST.find((t) => t.id === loadingTimbre)?.name} 采样...</span>
+            <span>
+              正在加载 {TIMBRE_LIST.find((t) => t.id === loadingTimbre)?.name} 采样...
+            </span>
             <span className="font-mono">{Math.round(loadProgress)}%</span>
           </div>
           <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-white/10">
@@ -714,9 +743,7 @@ export default function PianoPage() {
         <div
           ref={notifyRef}
           className={`fixed left-1/2 top-16 z-[300] -translate-x-1/2 rounded-2xl border px-5 py-2.5 text-sm shadow-2xl backdrop-blur-md ${
-            timbreFailed
-              ? "border-pink/50 bg-ink-2/95"
-              : "border-lime/40 bg-ink-2/90"
+            timbreFailed ? "border-pink/50 bg-ink-2/95" : "border-lime/40 bg-ink-2/90"
           }`}
         >
           {timbreFailed ? (

@@ -28,7 +28,7 @@ export default function NotFound() {
 
       {/* 底部小字 */}
       <p className="absolute bottom-6 text-[11px] text-dim/40">
-        QEEYU · 2026
+        KUANG · 2026
       </p>
     </div>
   );

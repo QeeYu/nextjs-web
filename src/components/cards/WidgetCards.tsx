@@ -1,8 +1,6 @@
 /**
- * 趣味小插件合集（6 个独立卡片）
- * - HitokotoCard: 一言
+ * 趣味小插件合集（4 个独立卡片）
  * - PianoCard: 迷你音琴（含完整版入口）
- * - FortuneCard: 今日运势
  * - DiceRoller: 掷骰子（单颗可点）
  * - ColorPalette: 配色卡
  * - ReactionTimer: 反应测试
@@ -28,52 +26,6 @@ const hslToHex = (h: number, s: number, l: number) => {
   return `#${f(0)}${f(8)}${f(4)}`;
 };
 
-// ---- 1. 一言 ----
-export function HitokotoCard() {
-  const [text, setText] = useState(hitokoto[0]);
-  const [count, setCount] = useState(1);
-  const textRef = useRef<HTMLParagraphElement>(null);
-
-  const next = () => {
-    let i;
-    do {
-      i = Math.floor(Math.random() * hitokoto.length);
-    } while (i === hitokoto.indexOf(text) && hitokoto.length > 1);
-    setText(hitokoto[i]);
-    setCount((c) => c + 1);
-    requestAnimationFrame(() => {
-      anime.remove(textRef.current);
-      anime({
-        targets: textRef.current,
-        opacity: [0, 1],
-        translateY: [14, 0],
-        duration: 500,
-        easing: "easeOutBack",
-      });
-    });
-  };
-
-  return (
-    <TiltCard className="card-glass card-line flex h-full min-h-[220px] flex-col p-5" maxTilt={5}>
-      <header className="flex items-center justify-between">
-        <h3 className="text-xs font-black tracking-widest text-dim">一言 · HITOKOTO</h3>
-        <span className="text-base">💬</span>
-      </header>
-      <p ref={textRef} className="mt-4 flex-1 text-[13.5px] leading-relaxed text-mist/90">
-        <span className="mr-1 text-neon">「</span>
-        {text}
-        <span className="ml-1 text-neon">」</span>
-      </p>
-      <button
-        onClick={next}
-        className="mt-4 cursor-pointer self-end rounded-full border border-cyan/40 px-4 py-1.5 text-xs text-cyan transition-all hover:bg-cyan/15 active:scale-95"
-      >
-        换一句 ↻
-      </button>
-      <p className="mt-2 text-right font-mono text-[10px] text-dim/50">已读 {count} 句</p>
-    </TiltCard>
-  );
-}
 
 // ---- 2. 迷你音琴 ----
 const FREQS = [523.25, 587.33, 659.25, 698.46, 783.99, 880.0, 987.77, 1046.5];
@@ -137,79 +89,6 @@ export function PianoCard() {
         <span aria-hidden>→</span>
       </Link>
       <p className="mt-2 text-center text-[10px] text-dim/50">🎵 上方试音 · 完整版更多功能</p>
-    </TiltCard>
-  );
-}
-
-// ---- 3. 今日运势 ----
-const FORTUNES = [
-  { icon: "SSR", text: "代码一次通过，测试全绿！", color: "#b4ff39" },
-  { icon: "SR", text: "灵感爆棚，重构顺手。", color: "#38e1ff" },
-  { icon: "SR", text: "今日宜摸鱼，bug 明日再修。", color: "#38e1ff" },
-  { icon: "R", text: "咖啡续命，平平安安。", color: "#7c5cff" },
-  { icon: "R", text: "遇到玄学 bug，重启解决。", color: "#7c5cff" },
-  { icon: "N", text: "键盘有点脏，记得清理。", color: "#9aa3c7" },
-];
-
-export function FortuneCard() {
-  const [fortune, setFortune] = useState(FORTUNES[0]);
-  const [rolls, setRolls] = useState(0);
-  const [rolling, setRolling] = useState(false);
-  const iconRef = useRef<HTMLDivElement>(null);
-
-  const roll = () => {
-    if (rolling) return;
-    setRolling(true);
-    let i;
-    do {
-      i = Math.floor(Math.random() * FORTUNES.length);
-    } while (FORTUNES[i] === fortune && FORTUNES.length > 1);
-    anime.remove(iconRef.current);
-    anime({
-      targets: iconRef.current,
-      rotateY: [0, 720],
-      duration: 900,
-      easing: "easeInOutQuart",
-      complete: () => {
-        setFortune(FORTUNES[i]);
-        setRolls((r) => r + 1);
-        setRolling(false);
-        anime({
-          targets: iconRef.current,
-          scale: [1, 1.18, 1],
-          duration: 380,
-          easing: "easeOutQuad",
-        });
-      },
-    });
-  };
-
-  return (
-    <TiltCard className="card-glass card-line flex h-full min-h-[220px] flex-col p-5" maxTilt={5}>
-      <header className="flex items-center justify-between">
-        <h3 className="text-xs font-black tracking-widest text-dim">今日运势 · FORTUNE</h3>
-        <span className="text-base">🔮</span>
-      </header>
-      <div className="flex flex-1 flex-col items-center justify-center gap-3">
-        <div style={{ perspective: 500 }}>
-          <div
-            ref={iconRef}
-            className="flex h-16 w-16 items-center justify-center rounded-full border-2 font-black"
-            style={{ borderColor: fortune.color, color: fortune.color }}
-          >
-            {fortune.icon}
-          </div>
-        </div>
-        <p className="px-2 text-center text-[12.5px] leading-snug text-mist/90">{fortune.text}</p>
-      </div>
-      <button
-        onClick={roll}
-        disabled={rolling}
-        className="mt-3 cursor-pointer self-center rounded-full border border-pink/40 px-5 py-1.5 text-xs text-pink transition-all hover:bg-pink/15 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
-      >
-        {rolling ? "抽取中…" : "抽取今日运势 🎲"}
-      </button>
-      <p className="mt-2 text-center font-mono text-[10px] text-dim/50">已抽 {rolls} 次</p>
     </TiltCard>
   );
 }

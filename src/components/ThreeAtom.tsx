@@ -1,9 +1,11 @@
 /**
- * 3D 分子/原子装饰组件（修复类型错误版）
+ * 3D 分子/原子装饰组件
+ * - 视口内才挂载 Canvas，离开视口立即卸载 → 不抢占主线程/GPU
+ * - dpr 上限 1.5，进一步降低 GPU 压力
  */
 "use client";
 
-import { useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { OrbitControls, Sphere, Torus, Points, PointMaterial } from "@react-three/drei";
 import * as THREE from "three";
@@ -277,62 +279,82 @@ function ParticleNebula() {
 }
 
 export default function ThreeAtom() {
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const [inView, setInView] = useState(false);
+
+  // ★ 视口内才挂载 Canvas，离开视口立即卸载 → 不再消耗 GPU/主线程
+  useEffect(() => {
+    const el = wrapRef.current;
+    if (!el) return;
+    const io = new IntersectionObserver(
+      ([entry]) => setInView(entry.isIntersecting),
+      { rootMargin: "200px 0px" } // 提前 200px 挂载，避免进入时闪白
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+
   return (
-    <div className="molecule-container h-full w-full overflow-hidden rounded-2xl">
-      <Canvas
-        camera={{ position: [0, 0, 2.8], fov: 20 }}
-        className="h-full w-full"
-        style={{ display: 'block', background: 'transparent' }}
-        gl={{ alpha: true, antialias: true }}
-      >
-        <ambientLight intensity={0.2} />
-        <pointLight position={[1.2, 1.2, 2]} intensity={0.8} color="#7c5cff" />
-        <pointLight position={[-1.2, -0.8, 2]} intensity={0.5} color="#38e1ff" />
-        <pointLight position={[0, 0, 3]} intensity={0.2} color="#ff5c8a" />
+    <div
+      ref={wrapRef}
+      className="molecule-container h-full w-full overflow-hidden rounded-2xl"
+    >
+      {inView && (
+        <Canvas
+          camera={{ position: [0, 0, 2.8], fov: 20 }}
+          className="h-full w-full"
+          style={{ display: "block", background: "transparent" }}
+          gl={{ alpha: true, antialias: true }}
+          // ★ 限制像素比上限为 1.5，降低高 DPI 屏的 GPU 压力
+          dpr={[1, 1.5]}
+        >
+          <ambientLight intensity={0.2} />
+          <pointLight position={[1.2, 1.2, 2]} intensity={0.8} color="#7c5cff" />
+          <pointLight position={[-1.2, -0.8, 2]} intensity={0.5} color="#38e1ff" />
+          <pointLight position={[0, 0, 3]} intensity={0.2} color="#ff5c8a" />
 
-        <Nucleus color="#7c5cff" position={[0, 0, 0]} size={0.12} emissiveIntensity={2.0} />
-        <Nucleus color="#38e1ff" position={[0.6, 0.04, 0.3]} size={0.05} />
-        <Nucleus color="#ff5c8a" position={[-0.45, -0.08, 0.4]} size={0.048} />
-        <Nucleus color="#b4ff39" position={[0.04, 0.5, -0.3]} size={0.045} />
-        <Nucleus color="#ff9f5c" position={[-0.35, 0.32, -0.4]} size={0.042} />
-        <Nucleus color="#00ffcc" position={[0.4, -0.32, -0.15]} size={0.042} />
-        <Nucleus color="#ff00ff" position={[-0.25, -0.38, 0.25]} size={0.04} />
+          <Nucleus color="#7c5cff" position={[0, 0, 0]} size={0.12} emissiveIntensity={2.0} />
+          <Nucleus color="#38e1ff" position={[0.6, 0.04, 0.3]} size={0.05} />
+          <Nucleus color="#ff5c8a" position={[-0.45, -0.08, 0.4]} size={0.048} />
+          <Nucleus color="#b4ff39" position={[0.04, 0.5, -0.3]} size={0.045} />
+          <Nucleus color="#ff9f5c" position={[-0.35, 0.32, -0.4]} size={0.042} />
+          <Nucleus color="#00ffcc" position={[0.4, -0.32, -0.15]} size={0.042} />
+          <Nucleus color="#ff00ff" position={[-0.25, -0.38, 0.25]} size={0.04} />
 
-        <OrbitRing radius={0.9} color="#38e1ff" speed={1.0} baseTilt={0.3} offset={0} />
-        <OrbitRing radius={1.1} color="#ff5c8a" speed={0.7} baseTilt={0.5} offset={1.2} />
-        <OrbitRing radius={1.3} color="#b4ff39" speed={0.5} baseTilt={0.7} offset={0.8} />
-        <OrbitRing radius={1.5} color="#7c5cff" speed={0.4} baseTilt={0.9} offset={0.3} />
+          <OrbitRing radius={0.9} color="#38e1ff" speed={1.0} baseTilt={0.3} offset={0} />
+          <OrbitRing radius={1.1} color="#ff5c8a" speed={0.7} baseTilt={0.5} offset={1.2} />
+          <OrbitRing radius={1.3} color="#b4ff39" speed={0.5} baseTilt={0.7} offset={0.8} />
+          <OrbitRing radius={1.5} color="#7c5cff" speed={0.4} baseTilt={0.9} offset={0.3} />
 
-        <Electron radius={0.9} speed={1.5} offset={0} color="#38e1ff" trailLength={60} />
-        <Electron radius={0.9} speed={1.5} offset={Math.PI} color="#38e1ff" trailLength={60} />
-        <Electron radius={1.1} speed={1.0} offset={0.3} color="#ff5c8a" trailLength={60} />
-        <Electron radius={1.1} speed={1.0} offset={Math.PI + 0.3} color="#ff5c8a" trailLength={60} />
-        <Electron radius={1.3} speed={0.7} offset={0.7} color="#b4ff39" trailLength={60} />
-        <Electron radius={1.3} speed={0.7} offset={Math.PI + 0.7} color="#b4ff39" trailLength={60} />
-        <Electron radius={1.5} speed={0.5} offset={0.4} color="#7c5cff" trailLength={60} />
-        <Electron radius={1.5} speed={0.5} offset={Math.PI + 0.4} color="#7c5cff" trailLength={60} />
+          <Electron radius={0.9} speed={1.5} offset={0} color="#38e1ff" trailLength={60} />
+          <Electron radius={0.9} speed={1.5} offset={Math.PI} color="#38e1ff" trailLength={60} />
+          <Electron radius={1.1} speed={1.0} offset={0.3} color="#ff5c8a" trailLength={60} />
+          <Electron radius={1.1} speed={1.0} offset={Math.PI + 0.3} color="#ff5c8a" trailLength={60} />
+          <Electron radius={1.3} speed={0.7} offset={0.7} color="#b4ff39" trailLength={60} />
+          <Electron radius={1.3} speed={0.7} offset={Math.PI + 0.7} color="#b4ff39" trailLength={60} />
+          <Electron radius={1.5} speed={0.5} offset={0.4} color="#7c5cff" trailLength={60} />
+          <Electron radius={1.5} speed={0.5} offset={Math.PI + 0.4} color="#7c5cff" trailLength={60} />
 
-        <Satellite radius={1.6} speed={0.3} offset={0} color="#38e1ff" size={0.025} />
-        <Satellite radius={1.6} speed={0.3} offset={Math.PI * 0.7} color="#ff5c8a" size={0.025} />
-        <Satellite radius={1.8} speed={0.25} offset={1.2} color="#b4ff39" size={0.02} />
+          <Satellite radius={1.6} speed={0.3} offset={0} color="#38e1ff" size={0.025} />
+          <Satellite radius={1.6} speed={0.3} offset={Math.PI * 0.7} color="#ff5c8a" size={0.025} />
+          <Satellite radius={1.8} speed={0.25} offset={1.2} color="#b4ff39" size={0.02} />
 
-        <ParticleNebula />
+          <ParticleNebula />
 
-        <OrbitControls
-          enableZoom={true}
-          enablePan={true}
-          autoRotate
-          autoRotateSpeed={0.15}
-          enableDamping
-          dampingFactor={0.08}
-          rotateSpeed={0.25}
-          minDistance={1.5}
-          maxDistance={5}
-          zoomSpeed={0.5}
-        />
-      </Canvas>
-
-      
+          <OrbitControls
+            enableZoom
+            enablePan
+            autoRotate
+            autoRotateSpeed={0.15}
+            enableDamping
+            dampingFactor={0.08}
+            rotateSpeed={0.25}
+            minDistance={1.5}
+            maxDistance={5}
+            zoomSpeed={0.5}
+          />
+        </Canvas>
+      )}
     </div>
   );
 }

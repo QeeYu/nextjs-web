@@ -1,100 +1,46 @@
 /**
- * 个人介绍卡片
- * - 头像展开/收起动画（GSAP 驱动）
- * - 桌面端悬停展开，移动端点击切换
- * - 介绍文本淡入淡出，不遮挡头像
+ * 个人介绍卡片（无头像版）
+ * - 直接展示姓名、标语、介绍文本
+ * - 底部装饰签名
  */
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import gsap from "gsap";
 import { profile } from "@/data/content";
 import TiltCard from "../TiltCard";
 
 export default function ProfileCard() {
-  const [open, setOpen] = useState(false);
-  const canHover = useRef(false);
-  const avatarRef = useRef<HTMLDivElement>(null);
-  const nameRef = useRef<HTMLDivElement>(null);
-  const introRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    canHover.current = window.matchMedia("(hover: hover)").matches;
-    // 初始状态：介绍隐藏
-    gsap.set(introRef.current, { opacity: 0, y: 20 });
-  }, []);
-
-  useEffect(() => {
-    const tl = gsap.timeline({ defaults: { ease: "power3.out" } });
-    if (open) {
-      // 展开：头像放大上移，姓名淡出让位，介绍淡入
-      tl.to(avatarRef.current, {
-        scale: 1.15,
-        y: -12,
-        duration: 0.5,
-        ease: "back.out(1.4)",
-      })
-        .to(nameRef.current, { opacity: 0, y: -10, duration: 0.3 }, 0)
-        .to(introRef.current, { opacity: 1, y: 0, duration: 0.5 }, 0.15);
-    } else {
-      // 收起
-      tl.to(avatarRef.current, { scale: 1, y: 0, duration: 0.4 })
-        .to(nameRef.current, { opacity: 1, y: 0, duration: 0.35 }, 0.1)
-        .to(introRef.current, { opacity: 0, y: 20, duration: 0.3 }, 0);
-    }
-  }, [open]);
-
   return (
-    <TiltCard className="card-glass card-line p-6 md:p-7">
-      <div
-        className="relative flex h-[320px] flex-col items-center md:h-[340px]"
-        onMouseLeave={() => {
-          if (canHover.current) setOpen(false);
-        }}
-      >
-        {/* 头像：悬停或点击切换 */}
-        <div
-          ref={avatarRef}
-          className="mt-6 cursor-pointer will-change-transform"
-          onMouseEnter={() => {
-            if (canHover.current) setOpen(true);
-          }}
-          onClick={() => {
-            if (!canHover.current) setOpen((o) => !o);
-          }}
-          role="button"
-          aria-label="查看自我介绍"
-        >
-          <div className="relative">
-            <div className="absolute -inset-2.5 animate-pulse rounded-full bg-linear-to-tr from-neon/70 via-cyan/60 to-pink/70 opacity-70 blur-lg" />
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={profile.avatar}
-              alt="QeeYu 的头像"
-              width={96}
-              height={96}
-              className="relative h-[96px] w-[96px] rounded-full border-2 border-white/25 object-cover"
-            />
-          </div>
-        </div>
+    <TiltCard className="card-glass card-line flex h-full flex-col p-6 md:p-8">
+      {/* 姓名 + 标语 */}
+      <header>
+        <p className="mb-3 font-mono text-[10px] tracking-[0.45em] text-cyan/70">
+          HI · I AM
+        </p>
+        <h3 className="text-gradient text-[clamp(2.2rem,5vw,3.2rem)] font-black leading-none tracking-[-0.02em]">
+          {profile.name}
+        </h3>
+        <p className="mt-3 text-[13.5px] leading-snug text-mist/85">
+          {profile.tagline}
+        </p>
+        <div className="mt-5 h-[2px] w-14 rounded-full bg-linear-to-r from-cyan via-neon to-pink" />
+      </header>
 
-        {/* 姓名 + 标语（展开时淡出） */}
-        <div ref={nameRef} className="mt-5 text-center will-change-transform">
-          <h3 className="text-2xl font-black text-gradient">{profile.name}</h3>
-          <p className="mt-1.5 text-xs text-dim">{profile.tagline}</p>
-          <p className="mt-4 text-[10px] tracking-[0.3em] text-dim/50">
-            触碰头像 · 展开介绍
-          </p>
-        </div>
-
-        {/* 介绍（绝对定位在下部） */}
-        <div
-          ref={introRef}
-          className="pointer-events-none absolute inset-x-4 bottom-4 opacity-0 whitespace-pre-line text-center text-[12.5px] leading-relaxed text-mist/90"
-        >
+      {/* 介绍文本：直接展示 */}
+      <div className="mt-6 flex-1">
+        <p className="whitespace-pre-line text-[14px] leading-[1.9] tracking-[0.005em] text-mist/80">
           {profile.intro}
-        </div>
+        </p>
       </div>
+
+      {/* 底部装饰签名 */}
+      <footer className="mt-6 flex items-center justify-between border-t border-white/5 pt-4">
+        <span className="font-mono text-[10px] tracking-[0.3em] text-dim/50">
+          PERSONAL · INTRO
+        </span>
+        <span className="font-mono text-[10px] tracking-[0.3em] text-cyan/60">
+          KUANG.DEV
+        </span>
+      </footer>
     </TiltCard>
   );
 }

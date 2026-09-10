@@ -1,15 +1,19 @@
 /**
  * 首屏区块 HeroSection
  * - 粒子背景：ParticleBackground（极光粒子 + 鼠标/点击交互）
- * - 标题：QeeYu 逐字母弹性入场 + 呼吸动画 + 鼠标视差
+ * - 标题：KUANG 逐字母弹性入场 + 呼吸动画 + 鼠标视差
  * - 底部：向下灵动箭头（点击平滑滚到"旅程"区）
  */
 "use client";
 
 import { useEffect, useRef } from "react";
 import gsap from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
 import anime from "@/lib/anime";
 import ParticleBackground from "./ParticleBackground";
+
+// ★ 显式注册：本组件自身就用到 scrollTrigger，不能依赖 JourneySection 的副作用
+gsap.registerPlugin(ScrollTrigger);
 
 export default function HeroSection() {
   const rootRef = useRef<HTMLElement>(null);
@@ -88,6 +92,8 @@ export default function HeroSection() {
       anime.remove(letters);
       anime.remove(titleRef.current);
       window.removeEventListener("mousemove", onMove);
+      // gsap.context 的 revert 会自动清理其中的 ScrollTrigger，
+      // 不要手动 ScrollTrigger.getAll().kill()（会误杀其他组件）
       ctx.revert();
     };
   }, []);
@@ -114,7 +120,7 @@ export default function HeroSection() {
             ref={titleRef}
             className="flex select-none text-[clamp(4rem,17vw,10rem)] font-black leading-none"
           >
-            {"QeeYu".split("").map((c, i) => (
+            {"KUANG".split("").map((c, i) => (
               <span key={i} className="hero-letter text-gradient will-change-transform">
                 {c}
               </span>
@@ -122,9 +128,7 @@ export default function HeroSection() {
           </h1>
         </div>
 
-        <p className="mt-7 text-center text-sm text-dim md:text-base">
-          把代码写成诗 · 把页面玩成画 <span className="text-neon">✦</span>
-        </p>
+        
 
         <button
           onClick={goNext}
@@ -153,7 +157,7 @@ export default function HeroSection() {
       </div>
 
       <div className="absolute bottom-4 right-5 z-10 font-mono text-[10px] text-dim/50">
-        QEEYU.DEV-2026
+        KUANG.DEV-2026
       </div>
     </section>
   );

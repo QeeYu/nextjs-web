@@ -1,5 +1,4 @@
 // 主页：交互背景 + 两页卡片 + 页脚
-// 本组件是服务端组件（自身无交互），所有交互都由各卡片（客户端组件）自行实现
 import InteractiveBackground from "./InteractiveBackground";
 import Reveal from "./Reveal";
 import ProfileCard from "./cards/ProfileCard";
@@ -7,20 +6,11 @@ import TimeCard from "./cards/TimeCard";
 import LinksCard from "./cards/LinksCard";
 import LanguageRingCard from "./cards/LanguageRingCard";
 import SkillsCard from "./cards/SkillsCard";
-import AlbumCard from "./cards/AlbumCard";
-import DiaryCard from "./cards/DiaryCard";
-import {
-  HitokotoCard,
-  PianoCard,
-  FortuneCard,
-  DiceRoller,
-  ColorPalette,
-  ReactionTimer,
-} from "./cards/WidgetCards";
-import TimelineCard from "./cards/TimelineCard";
+import ExperienceCard from "./cards/ExperienceCard";
+import WorksCard from "./cards/WorksCard";
+import { PianoCard, DiceRoller, ColorPalette, ReactionTimer } from "./cards/WidgetCards";
 import ThreeAtom from "./ThreeAtom";
-
-/** 两页共用的页头（含跳转到另一页的锚点按钮） */
+/** 两页共用的页头 */
 function PageHeader({
   index,
   zh,
@@ -38,10 +28,14 @@ function PageHeader({
     <Reveal>
       <div className="mb-10 flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="font-mono text-[11px] tracking-[0.5em] text-cyan">PAGE {index}</p>
+          <p className="font-mono text-[11px] tracking-[0.5em] text-cyan">
+            PAGE {index}
+          </p>
           <h2 className="mt-2 text-3xl font-black md:text-4xl">
             {zh}
-            <span className="ml-3 align-middle text-base font-bold text-dim/70 md:text-lg">{en}</span>
+            <span className="ml-3 align-middle text-base font-bold text-dim/70 md:text-lg">
+              {en}
+            </span>
           </h2>
           <div className="mt-3 h-[3px] w-24 rounded-full bg-linear-to-r from-neon via-cyan to-pink" />
         </div>
@@ -59,10 +53,10 @@ function PageHeader({
 export default function MainSection() {
   return (
     <div id="main" className="relative">
-      {/* ① 交互背景：sticky 铺满视口 */}
+      {/* 交互背景 */}
       <InteractiveBackground />
 
-      {/* ② 内容层：负 margin 上移 100svh */}
+      {/* 内容层 */}
       <div className="relative z-10 -mt-[100svh]">
         {/* ============ 第一页：关于我 ============ */}
         <section
@@ -77,7 +71,6 @@ export default function MainSection() {
             nextLabel="前往第 2 页"
           />
 
-          {/* ★ 卡片栅格：手机 1 列 / 平板 2 列 */}
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
             <Reveal>
               <ProfileCard />
@@ -88,14 +81,15 @@ export default function MainSection() {
             <Reveal delay={60}>
               <LinksCard />
             </Reveal>
+            {/* ★ 技能卡片：放在语言卡之前 */}
             <Reveal delay={150}>
+              <SkillsCard />
+            </Reveal>
+            {/* ★ 语言卡：挪到技能卡之后 */}
+            <Reveal delay={180}>
               <LanguageRingCard />
             </Reveal>
-            {/* ★ 新增：时间线卡片（化工→全栈） */}
-            <Reveal delay={180}>
-              <TimelineCard />
-            </Reveal>
-            {/* ★ 新增：3D 分子/原子（化工主题装饰） */}
+            {/* 3D 分子装饰 */}
             <Reveal delay={200}>
               <div className="card-glass card-line relative h-full min-h-[300px] overflow-hidden p-0">
                 <ThreeAtom />
@@ -110,59 +104,50 @@ export default function MainSection() {
           <span className="anim-float text-cyan">▼</span>
         </div>
 
-        {/* ============ 第二页：技能 · 相册 · 日记 ============ */}
-        <section
-          id="main-page-2"
-          className="mx-auto max-w-6xl px-4 pb-16 md:px-8"
-        >
+        {/* ============ 第二页：作品 · 趣味 ============ */}
+        <section id="main-page-2" className="mx-auto max-w-6xl px-4 pb-16 md:px-8">
           <PageHeader
             index="02"
-            zh="技能 · 相册 · 日记"
-            en="SKILLS / ALBUM / DIARY"
+            zh="作品 · 趣味"
+            en="WORKS / FUN ZONE"
             nextId="#hero"
             nextLabel="回到顶部"
           />
+          <Reveal>
+            <ExperienceCard />
+          </Reveal>
 
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
-            <Reveal>
-              <SkillsCard />
-            </Reveal>
-            <Reveal delay={90}>
-              <AlbumCard />
-            </Reveal>
-            <Reveal delay={180}>
-              <DiaryCard />
-            </Reveal>
-          </div>
+          {/* 作品集：全宽 */}
+          <Reveal delay={90} className="mt-8 md:mt-10">
+            <WorksCard />
+          </Reveal>
 
           {/* 趣味小插件区 */}
           <div className="mt-14">
             <Reveal>
               <div className="mb-6 flex items-center gap-3">
                 <h3 className="text-xl font-black">
-                  趣味小插件 <span className="text-sm font-bold text-dim/70">FUN ZONE</span>
+                  趣味小插件{" "}
+                  <span className="text-sm font-bold text-dim/70">
+                    FUN ZONE
+                  </span>
                 </h3>
                 <div className="h-[2px] flex-1 rounded-full bg-linear-to-r from-neon/60 via-cyan/60 to-transparent" />
               </div>
             </Reveal>
 
-            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3">
+            {/* 大屏 4 列，更紧凑 */}
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-4">
               <Reveal>
-                <HitokotoCard />
-              </Reveal>
-              <Reveal delay={60}>
                 <PianoCard />
               </Reveal>
-              <Reveal delay={120}>
-                <FortuneCard />
-              </Reveal>
-              <Reveal delay={180}>
+              <Reveal delay={60}>
                 <DiceRoller />
               </Reveal>
-              <Reveal delay={240}>
+              <Reveal delay={120}>
                 <ColorPalette />
               </Reveal>
-              <Reveal delay={300}>
+              <Reveal delay={180}>
                 <ReactionTimer />
               </Reveal>
             </div>
@@ -172,7 +157,7 @@ export default function MainSection() {
         {/* 页脚 */}
         <footer className="border-t border-white/10 px-4 py-10 text-center">
           <p className="font-mono text-xs tracking-[0.3em] text-dim">
-            QEEYU · PERSONAL HOMEPAGE · 2026
+            KUANG · PERSONAL HOMEPAGE · 2026
           </p>
           <p className="mt-2 text-[11px] text-dim/70">
             Built with Next.js 16 · React 19 · Tailwind CSS 4 · GSAP · anime.js · Canvas

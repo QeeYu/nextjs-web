@@ -115,6 +115,7 @@ body {
 }
 .anim-float {
   animation: floatY 1.8s ease-in-out infinite;
+  will-change: transform;        /* ★ 新增 */
 }
 
 @keyframes spin360 {
@@ -129,6 +130,7 @@ body {
 }
 .anim-spin-slow {
   animation: spin360 16s linear infinite;
+  will-change: transform;        /* ★ 新增 */
 }
 
 @keyframes blobDrift {
@@ -145,6 +147,7 @@ body {
 }
 .anim-blob {
   animation: blobDrift 7s ease-in-out infinite;
+  will-change: transform;        /* ★ 新增 */
 }
 
 @keyframes glowPulse {
@@ -359,30 +362,87 @@ body {
     animation: none !important;
   }
 }
-/* ===== Journey 新增动画 ===== */
+/* ★ 原来的「Journey 新增动画」重复块已移除：
+   twinkle / spin360 / anim-spin-slow / anim-twinkle 均已在上面定义过 */
+   /* ===== Journey 增强 ===== */
 
-/* 闪烁（已有，可保留） */
-@keyframes twinkle {
-  0%, 100% { opacity: 0.15; transform: scale(0.7); }
-  50% { opacity: 1; transform: scale(1.5); }
-}
-.anim-twinkle {
-  animation: twinkle 2.5s ease-in-out infinite;
+/* 主角名专用的三色流光渐变 */
+.text-gradient-hero {
+  background: linear-gradient(
+    100deg,
+    #38e1ff 0%,
+    #7c5cff 35%,
+    #ff5c8a 65%,
+    #ff9f5c 100%
+  );
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: heroFlow 6s ease-in-out infinite;
 }
 
-/* 呼吸浮动（已有 .anim-float，可复用） */
-/* .anim-float 已存在，无需重复添加 */
-/* ===== Journey 新增动画 ===== */
-@keyframes twinkle {
-  0%, 100% { opacity: 0.15; transform: scale(0.7); }
-  50% { opacity: 1; transform: scale(1.5); }
+@keyframes heroFlow {
+  0%, 100% { background-position: 0% 50%; }
+  50%      { background-position: 100% 50%; }
 }
-.anim-twinkle {
-  animation: twinkle 2.5s ease-in-out infinite;
+
+/* 数字呼吸光晕 */
+.j-num-glow {
+  filter: drop-shadow(0 0 12px currentColor);
 }
-@keyframes spin360 {
-  to { transform: rotate(360deg); }
+/* ============================================================
+   作品卡片性能优化
+   ============================================================ */
+
+/* 卡片本体：限制重绘范围 + 悬停上浮 */
+.work-card {
+  contain: layout paint;
+  transition: transform 0.3s ease, border-color 0.3s ease, background-color 0.3s ease;
 }
-.anim-spin-slow {
-  animation: spin360 16s linear infinite;
+.work-card:hover {
+  transform: translate3d(0, -4px, 0);
+  border-color: rgba(56, 225, 255, 0.4);
+  background-color: rgba(255, 255, 255, 0.06);
+}
+
+/* 封面图：悬停缩放 */
+.work-cover {
+  transition: transform 0.5s ease;
+}
+.work-card:hover .work-cover {
+  transform: scale(1.05);
+}
+
+/* 悬停遮罩：只变透明度 */
+.work-overlay {
+  transition: opacity 0.35s ease;
+}
+.work-card:hover .work-overlay {
+  opacity: 1;
+}
+
+/* 打开图标：位移 + 透明度 */
+.work-open {
+  transition: transform 0.35s ease, opacity 0.35s ease;
+}
+.work-card:hover .work-open {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+/* 触摸设备直接禁用悬停效果（手机上本来就没有 hover） */
+@media (hover: none) {
+  .work-card:hover {
+    transform: none;
+    border-color: rgba(255, 255, 255, 0.1);
+    background-color: rgba(255, 255, 255, 0.03);
+  }
+  .work-card:hover .work-cover {
+    transform: none;
+  }
+  .work-overlay,
+  .work-open {
+    display: none;
+  }
 }

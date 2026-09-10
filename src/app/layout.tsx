@@ -2,8 +2,8 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "QeeYu · 个人主页",
-  description: "QeeYu 的个人主页 —— 关于我、技能、相册与日记",
+  title: "个人主页",
+  description: "的个人主页 —— 关于我、技能、作品",
 };
 
 export const viewport: Viewport = {
